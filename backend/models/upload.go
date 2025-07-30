@@ -8,7 +8,7 @@ import (
 )
 
 type Upload struct {
-	ID           uuid.UUID `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	ID           uuid.UUID `json:"id" gorm:"type:uuid;primary_key"`
 	UserID       uuid.UUID `json:"user_id" gorm:"type:uuid;not null;index"`
 	FileID       uuid.UUID `json:"file_id" gorm:"type:uuid;not null;index"`
 	IPAddress    string    `json:"ip_address" gorm:"size:45"`

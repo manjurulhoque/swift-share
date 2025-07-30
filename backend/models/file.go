@@ -8,7 +8,7 @@ import (
 )
 
 type File struct {
-	ID            uuid.UUID      `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	ID            uuid.UUID      `json:"id" gorm:"type:uuid;primary_key"`
 	UserID        uuid.UUID      `json:"user_id" gorm:"type:uuid;not null;index"`
 	FileName      string         `json:"file_name" gorm:"size:255;not null" validate:"required"`
 	OriginalName  string         `json:"original_name" gorm:"size:255;not null" validate:"required"`

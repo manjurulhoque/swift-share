@@ -8,7 +8,7 @@ import (
 )
 
 type Download struct {
-	ID          uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	ID          uuid.UUID  `json:"id" gorm:"type:uuid;primary_key"`
 	UserID      *uuid.UUID `json:"user_id" gorm:"type:uuid;index"` // Nullable for anonymous downloads
 	FileID      uuid.UUID  `json:"file_id" gorm:"type:uuid;not null;index"`
 	ShareLinkID *uuid.UUID `json:"share_link_id" gorm:"type:uuid;index"` // Nullable for direct downloads

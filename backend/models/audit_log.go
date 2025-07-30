@@ -8,7 +8,7 @@ import (
 )
 
 type AuditLog struct {
-	ID         uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	ID         uuid.UUID  `json:"id" gorm:"type:uuid;primary_key"`
 	UserID     *uuid.UUID `json:"user_id" gorm:"type:uuid;index"` // Nullable for system events
 	Action     string     `json:"action" gorm:"size:100;not null" validate:"required"`
 	Resource   string     `json:"resource" gorm:"size:100;not null" validate:"required"`
