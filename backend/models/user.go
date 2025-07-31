@@ -42,6 +42,10 @@ type UserLoginRequest struct {
 	Password string `json:"password" validate:"required"`
 }
 
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token" validate:"required"`
+}
+
 type UserResponse struct {
 	ID            uuid.UUID  `json:"id"`
 	FirstName     string     `json:"first_name"`

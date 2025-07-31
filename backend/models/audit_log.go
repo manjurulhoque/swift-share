@@ -49,6 +49,7 @@ const (
 	ActionLogin          = "login"
 	ActionLogout         = "logout"
 	ActionRegister       = "register"
+	ActionTokenRefresh   = "token_refresh"
 	ActionFileUpload     = "file_upload"
 	ActionFileDownload   = "file_download"
 	ActionFileDelete     = "file_delete"

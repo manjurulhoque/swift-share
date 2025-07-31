@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/manjurulhoque/swift-share/backend/config"
 	"github.com/manjurulhoque/swift-share/backend/database"
 	"github.com/manjurulhoque/swift-share/backend/middleware"
 	"github.com/manjurulhoque/swift-share/backend/models"
@@ -65,16 +67,25 @@ func (ac *AuthController) Register(c *gin.Context) {
 	ac.auditService.LogEvent(nil, models.ActionRegister, models.ResourceUser, &user.ID,
 		"User registered successfully", c.ClientIP(), c.GetHeader("User-Agent"), models.StatusSuccess)
 
-	// Generate JWT token
-	token, err := middleware.GenerateToken(user)
+	// Generate JWT tokens
+	accessToken, err := middleware.GenerateToken(user)
 	if err != nil {
-		utils.InternalServerErrorResponse(c, "Failed to generate token")
+		utils.InternalServerErrorResponse(c, "Failed to generate access token")
+		return
+	}
+
+	refreshToken, err := middleware.GenerateRefreshToken(user)
+	if err != nil {
+		utils.InternalServerErrorResponse(c, "Failed to generate refresh token")
 		return
 	}
 
 	response := gin.H{
-		"user":  user.ToResponse(),
-		"token": token,
+		"user": user.ToResponse(),
+		"tokens": gin.H{
+			"access_token":  accessToken,
+			"refresh_token": refreshToken,
+		},
 	}
 
 	utils.SuccessResponse(c, http.StatusCreated, "User registered successfully", response)
@@ -136,16 +147,25 @@ func (ac *AuthController) Login(c *gin.Context) {
 	ac.auditService.LogEvent(&user.ID, models.ActionLogin, models.ResourceAuth, &user.ID,
 		"User logged in successfully", c.ClientIP(), c.GetHeader("User-Agent"), models.StatusSuccess)
 
-	// Generate JWT token
-	token, err := middleware.GenerateToken(user)
+	// Generate JWT tokens
+	accessToken, err := middleware.GenerateToken(user)
 	if err != nil {
-		utils.InternalServerErrorResponse(c, "Failed to generate token")
+		utils.InternalServerErrorResponse(c, "Failed to generate access token")
+		return
+	}
+
+	refreshToken, err := middleware.GenerateRefreshToken(user)
+	if err != nil {
+		utils.InternalServerErrorResponse(c, "Failed to generate refresh token")
 		return
 	}
 
 	response := gin.H{
-		"user":  user.ToResponse(),
-		"token": token,
+		"user": user.ToResponse(),
+		"tokens": gin.H{
+			"access_token":  accessToken,
+			"refresh_token": refreshToken,
+		},
 	}
 
 	utils.SuccessResponse(c, http.StatusOK, "Login successful", response)
@@ -245,4 +265,66 @@ func (ac *AuthController) Logout(c *gin.Context) {
 	}
 
 	utils.SuccessResponse(c, http.StatusOK, "Logout successful", nil)
+}
+
+// RefreshToken godoc
+// @Summary Refresh access token
+// @Description Generate a new access token using a valid refresh token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param refresh_token body models.RefreshTokenRequest true "Refresh token"
+// @Success 200 {object} utils.APIResponse "Token refreshed successfully"
+// @Failure 400 {object} utils.APIResponse "Validation error"
+// @Failure 401 {object} utils.APIResponse "Invalid or expired refresh token"
+// @Failure 500 {object} utils.APIResponse "Internal server error"
+// @Router /auth/refresh [post]
+func (ac *AuthController) RefreshToken(c *gin.Context) {
+	var req models.RefreshTokenRequest
+	if !utils.BindAndValidate(c, &req) {
+		return
+	}
+
+	// Parse and validate the refresh token
+	claims := &middleware.Claims{}
+	token, err := jwt.ParseWithClaims(req.RefreshToken, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(config.AppConfig.JWT.Secret), nil
+	})
+
+	if err != nil || !token.Valid {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Invalid refresh token")
+		return
+	}
+
+	// Check if token is expired
+	if claims.ExpiresAt.Time.Before(time.Now()) {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Refresh token has expired")
+		return
+	}
+
+	// Get user from database
+	var user models.User
+	if err := database.GetDB().Where("id = ? AND is_active = ?", claims.UserID, true).First(&user).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "User not found or inactive")
+		return
+	}
+
+	// Generate new access token
+	accessToken, err := middleware.GenerateToken(user)
+	if err != nil {
+		utils.InternalServerErrorResponse(c, "Failed to generate access token")
+		return
+	}
+
+	response := gin.H{
+		"tokens": gin.H{
+			"access_token": accessToken,
+		},
+	}
+
+	// Log the token refresh event
+	ac.auditService.LogEvent(&user.ID, models.ActionTokenRefresh, models.ResourceAuth, &user.ID,
+		"Access token refreshed", c.ClientIP(), c.GetHeader("User-Agent"), models.StatusSuccess)
+
+	utils.SuccessResponse(c, http.StatusOK, "Token refreshed successfully", response)
 }

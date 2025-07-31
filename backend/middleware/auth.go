@@ -125,7 +125,7 @@ func OptionalAuthMiddleware() gin.HandlerFunc {
 	}
 }
 
-// GenerateToken generates a JWT token for a user
+// GenerateToken generates a JWT access token for a user
 func GenerateToken(user models.User) (string, error) {
 	expirationTime := time.Now().Add(24 * time.Hour) // Default 24 hours
 
@@ -135,6 +135,26 @@ func GenerateToken(user models.User) (string, error) {
 			expirationTime = time.Now().Add(duration)
 		}
 	}
+
+	claims := &Claims{
+		UserID:  user.ID,
+		Email:   user.Email,
+		IsAdmin: user.IsAdmin,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Issuer:    "swift-share",
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(config.AppConfig.JWT.Secret))
+}
+
+// GenerateRefreshToken generates a JWT refresh token for a user
+func GenerateRefreshToken(user models.User) (string, error) {
+	// Refresh token should last longer than access token
+	expirationTime := time.Now().Add(7 * 24 * time.Hour) // Default 7 days
 
 	claims := &Claims{
 		UserID:  user.ID,

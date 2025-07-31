@@ -18,6 +18,7 @@ func SetupRoutes(router *gin.Engine) {
 		{
 			auth.POST("/register", authController.Register)
 			auth.POST("/login", authController.Login)
+			auth.POST("/refresh", authController.RefreshToken)
 		}
 
 		// Protected routes (authentication required)
@@ -88,6 +89,7 @@ func SetupRoutes(router *gin.Engine) {
 				"auth": gin.H{
 					"POST /api/v1/auth/register": "User registration",
 					"POST /api/v1/auth/login":    "User login",
+					"POST /api/v1/auth/refresh":  "Refresh access token",
 					"GET  /api/v1/auth/profile":  "Get user profile (protected)",
 					"PUT  /api/v1/auth/profile":  "Update user profile (protected)",
 					"POST /api/v1/auth/logout":   "User logout (protected)",
