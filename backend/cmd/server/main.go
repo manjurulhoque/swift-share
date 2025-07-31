@@ -6,10 +6,32 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/manjurulhoque/swift-share/backend/config"
 	"github.com/manjurulhoque/swift-share/backend/database"
+	"github.com/manjurulhoque/swift-share/backend/docs"
 	"github.com/manjurulhoque/swift-share/backend/middleware"
 	"github.com/manjurulhoque/swift-share/backend/routes"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
+// @title           Swift Share API
+// @version         1.0
+// @description     Professional file sharing platform API
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   API Support
+// @contact.url    https://github.com/manjurulhoque/swift-share
+// @contact.email  support@swiftshare.com
+
+// @license.name  MIT
+// @license.url   https://opensource.org/licenses/MIT
+
+// @host      localhost:8080
+// @BasePath  /api/v1
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
 func main() {
 	// Load configuration (this also initializes the logger)
 	config.LoadConfig()
@@ -36,6 +58,10 @@ func main() {
 
 	// Setup routes
 	routes.SetupRoutes(router)
+
+	// Swagger documentation
+	docs.SwaggerInfo.BasePath = "/api/v1"
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Create upload directory if it doesn't exist
 	if err := os.MkdirAll(config.AppConfig.Upload.UploadPath, 0755); err != nil {

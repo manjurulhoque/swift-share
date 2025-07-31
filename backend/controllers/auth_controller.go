@@ -24,7 +24,18 @@ func NewAuthController() *AuthController {
 	}
 }
 
-// Register creates a new user account
+// Register godoc
+// @Summary Register a new user
+// @Description Create a new user account
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param user body models.UserRegisterRequest true "User registration information"
+// @Success 201 {object} utils.APIResponse "User registered successfully"
+// @Failure 400 {object} utils.APIResponse "Validation error"
+// @Failure 409 {object} utils.APIResponse "Email already registered"
+// @Failure 500 {object} utils.APIResponse "Internal server error"
+// @Router /auth/register [post]
 func (ac *AuthController) Register(c *gin.Context) {
 	var req models.UserRegisterRequest
 	if !utils.BindAndValidate(c, &req) {
@@ -69,7 +80,18 @@ func (ac *AuthController) Register(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusCreated, "User registered successfully", response)
 }
 
-// Login authenticates a user and returns a JWT token
+// Login godoc
+// @Summary Login a user
+// @Description Authenticate a user and return a JWT token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param user body models.UserLoginRequest true "User login credentials"
+// @Success 200 {object} utils.APIResponse "Login successful"
+// @Failure 400 {object} utils.APIResponse "Validation error"
+// @Failure 401 {object} utils.APIResponse "Invalid email or password"
+// @Failure 500 {object} utils.APIResponse "Internal server error"
+// @Router /auth/login [post]
 func (ac *AuthController) Login(c *gin.Context) {
 	var req models.UserLoginRequest
 	if !utils.BindAndValidate(c, &req) {
@@ -129,7 +151,16 @@ func (ac *AuthController) Login(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Login successful", response)
 }
 
-// GetProfile returns the current user's profile
+// GetProfile godoc
+// @Summary Get user profile
+// @Description Get the current user's profile information
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} utils.APIResponse "Profile retrieved successfully"
+// @Failure 401 {object} utils.APIResponse "Unauthorized"
+// @Router /auth/profile [get]
 func (ac *AuthController) GetProfile(c *gin.Context) {
 	user, exists := middleware.GetUserFromContext(c)
 	if !exists {
@@ -140,7 +171,20 @@ func (ac *AuthController) GetProfile(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Profile retrieved successfully", user.ToResponse())
 }
 
-// UpdateProfile updates the current user's profile
+// UpdateProfile godoc
+// @Summary Update user profile
+// @Description Update the current user's profile information
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param user body models.UserUpdateRequest true "User profile update information"
+// @Success 200 {object} utils.APIResponse "Profile updated successfully"
+// @Failure 400 {object} utils.APIResponse "Validation error"
+// @Failure 401 {object} utils.APIResponse "Unauthorized"
+// @Failure 409 {object} utils.APIResponse "Email already registered"
+// @Failure 500 {object} utils.APIResponse "Internal server error"
+// @Router /auth/profile [put]
 func (ac *AuthController) UpdateProfile(c *gin.Context) {
 	user, exists := middleware.GetUserFromContext(c)
 	if !exists {
@@ -183,7 +227,15 @@ func (ac *AuthController) UpdateProfile(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Profile updated successfully", user.ToResponse())
 }
 
-// Logout logs out the current user (mainly for audit purposes)
+// Logout godoc
+// @Summary Logout user
+// @Description Log out the current user (mainly for audit purposes)
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} utils.APIResponse "Logout successful"
+// @Router /auth/logout [post]
 func (ac *AuthController) Logout(c *gin.Context) {
 	userID, exists := middleware.GetUserIDFromContext(c)
 	if exists {
