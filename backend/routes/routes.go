@@ -9,6 +9,10 @@ import (
 func SetupRoutes(router *gin.Engine) {
 	// Initialize controllers
 	authController := controllers.NewAuthController()
+	fileController := controllers.NewFileController()
+	shareController := controllers.NewShareController()
+	adminController := controllers.NewAdminController()
+	publicController := controllers.NewPublicController()
 
 	// API v1 routes
 	v1 := router.Group("/api/v1")
@@ -36,17 +40,22 @@ func SetupRoutes(router *gin.Engine) {
 			// File management routes
 			files := protected.Group("/files")
 			{
-				// TODO: Implement file controller
-				files.GET("/", func(c *gin.Context) { c.JSON(200, gin.H{"message": "Files endpoint - TODO"}) })
-				files.POST("/upload", func(c *gin.Context) { c.JSON(200, gin.H{"message": "Upload endpoint - TODO"}) })
+				files.GET("/", fileController.GetFiles)
+				files.POST("/upload", fileController.UploadFile)
+				files.GET("/:id", fileController.GetFile)
+				files.PUT("/:id", fileController.UpdateFile)
+				files.DELETE("/:id", fileController.DeleteFile)
+				files.GET("/:id/download", fileController.DownloadFile)
 			}
 
 			// Share links routes
 			shares := protected.Group("/shares")
 			{
-				// TODO: Implement share controller
-				shares.GET("/", func(c *gin.Context) { c.JSON(200, gin.H{"message": "Shares endpoint - TODO"}) })
-				shares.POST("/", func(c *gin.Context) { c.JSON(200, gin.H{"message": "Create share endpoint - TODO"}) })
+				shares.GET("/", shareController.GetShareLinks)
+				shares.POST("/", shareController.CreateShareLink)
+				shares.GET("/:id", shareController.GetShareLink)
+				shares.PUT("/:id", shareController.UpdateShareLink)
+				shares.DELETE("/:id", shareController.DeleteShareLink)
 			}
 		}
 
@@ -55,19 +64,16 @@ func SetupRoutes(router *gin.Engine) {
 		admin.Use(middleware.AuthMiddleware())
 		admin.Use(middleware.AdminMiddleware())
 		{
-			// TODO: Implement admin controllers
-			admin.GET("/users", func(c *gin.Context) { c.JSON(200, gin.H{"message": "Admin users endpoint - TODO"}) })
-			admin.GET("/stats", func(c *gin.Context) { c.JSON(200, gin.H{"message": "Admin stats endpoint - TODO"}) })
-			admin.GET("/audit-logs", func(c *gin.Context) { c.JSON(200, gin.H{"message": "Admin audit logs endpoint - TODO"}) })
+			admin.GET("/users", adminController.GetUsers)
+			admin.GET("/stats", adminController.GetSystemStats)
 		}
 
 		// Public file access routes (no authentication, but may have optional auth)
 		public := v1.Group("/public")
 		public.Use(middleware.OptionalAuthMiddleware())
 		{
-			// TODO: Implement public file access
-			public.GET("/share/:token", func(c *gin.Context) { c.JSON(200, gin.H{"message": "Public share access - TODO"}) })
-			public.POST("/share/:token/download", func(c *gin.Context) { c.JSON(200, gin.H{"message": "Public download - TODO"}) })
+			public.GET("/share/:token", publicController.AccessShareLink)
+			public.POST("/share/:token/download", publicController.DownloadSharedFile)
 		}
 	}
 

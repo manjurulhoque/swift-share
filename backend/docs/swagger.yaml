@@ -1,5 +1,59 @@
 basePath: /api/v1
 definitions:
+  models.FileUpdateRequest:
+    properties:
+      description:
+        maxLength: 500
+        type: string
+      is_public:
+        type: boolean
+      tags:
+        maxLength: 255
+        type: string
+    type: object
+  models.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  models.ShareLinkCreateRequest:
+    properties:
+      description:
+        maxLength: 500
+        type: string
+      expires_at:
+        type: string
+      file_id:
+        type: string
+      max_downloads:
+        minimum: 0
+        type: integer
+      password:
+        maxLength: 50
+        minLength: 4
+        type: string
+    required:
+    - file_id
+    type: object
+  models.ShareLinkUpdateRequest:
+    properties:
+      description:
+        maxLength: 500
+        type: string
+      expires_at:
+        type: string
+      is_active:
+        type: boolean
+      max_downloads:
+        minimum: 0
+        type: integer
+      password:
+        maxLength: 50
+        minLength: 4
+        type: string
+    type: object
   models.UserLoginRequest:
     properties:
       email:
@@ -68,6 +122,78 @@ info:
   title: Swift Share API
   version: "1.0"
 paths:
+  /admin/stats:
+    get:
+      consumes:
+      - application/json
+      description: Get comprehensive system statistics including users, files, shares,
+        and downloads
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: System statistics retrieved successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "403":
+          description: Admin access required
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get system statistics
+      tags:
+      - admin
+  /admin/users:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated list of all users with filtering options
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Items per page (default: 10, max: 100)'
+        in: query
+        name: limit
+        type: integer
+      - description: Search term for user name or email
+        in: query
+        name: search
+        type: string
+      - description: Filter by status (active, inactive, all)
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Users retrieved successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "403":
+          description: Admin access required
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all users
+      tags:
+      - admin
   /auth/login:
     post:
       consumes:
@@ -179,6 +305,40 @@ paths:
       summary: Update user profile
       tags:
       - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Generate a new access token using a valid refresh token
+      parameters:
+      - description: Refresh token
+        in: body
+        name: refresh_token
+        required: true
+        schema:
+          $ref: '#/definitions/models.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token refreshed successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Invalid or expired refresh token
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Refresh access token
+      tags:
+      - auth
   /auth/register:
     post:
       consumes:
@@ -213,6 +373,504 @@ paths:
       summary: Register a new user
       tags:
       - auth
+  /files:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated list of user's files
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Items per page (default: 10, max: 100)'
+        in: query
+        name: limit
+        type: integer
+      - description: Search term for file name or description
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Files retrieved successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user files
+      tags:
+      - files
+  /files/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a file and its physical file from disk
+      parameters:
+      - description: File ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: File deleted successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Invalid file ID
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: File not found
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a file
+      tags:
+      - files
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a specific file
+      parameters:
+      - description: File ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: File retrieved successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Invalid file ID
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: File not found
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a specific file
+      tags:
+      - files
+    put:
+      consumes:
+      - application/json
+      description: Update file description, tags, or public status
+      parameters:
+      - description: File ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: File update information
+        in: body
+        name: file
+        required: true
+        schema:
+          $ref: '#/definitions/models.FileUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: File updated successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: File not found
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update file information
+      tags:
+      - files
+  /files/{id}/download:
+    get:
+      consumes:
+      - application/json
+      description: Download a file by ID
+      parameters:
+      - description: File ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: File content
+          schema:
+            type: file
+        "400":
+          description: Invalid file ID
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: File not found
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Download a file
+      tags:
+      - files
+  /files/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a file to the system
+      parameters:
+      - description: File to upload
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: File description
+        in: formData
+        name: description
+        type: string
+      - description: File tags
+        in: formData
+        name: tags
+        type: string
+      - description: Make file public
+        in: formData
+        name: is_public
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: File uploaded successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "413":
+          description: File too large
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Upload a file
+      tags:
+      - files
+  /public/share/{token}:
+    get:
+      consumes:
+      - application/json
+      description: Access a shared file using a share token
+      parameters:
+      - description: Share token
+        in: path
+        name: token
+        required: true
+        type: string
+      - description: Share link password (if required)
+        in: formData
+        name: password
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Share link accessed successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Share token is required
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Password required or invalid
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "403":
+          description: Share link not accessible
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: Share link not found
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Access a shared file
+      tags:
+      - public
+  /public/share/{token}/download:
+    post:
+      consumes:
+      - application/json
+      description: Download a file from a share link
+      parameters:
+      - description: Share token
+        in: path
+        name: token
+        required: true
+        type: string
+      - description: Share link password (if required)
+        in: formData
+        name: password
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: File content
+          schema:
+            type: file
+        "400":
+          description: Share token is required
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Password required or invalid
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "403":
+          description: Share link not accessible
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: Share link or file not found
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Download a shared file
+      tags:
+      - public
+  /shares:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated list of user's share links
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Items per page (default: 10, max: 100)'
+        in: query
+        name: limit
+        type: integer
+      - description: Search term for file name or description
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Share links retrieved successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user share links
+      tags:
+      - shares
+    post:
+      consumes:
+      - application/json
+      description: Create a new share link for a file
+      parameters:
+      - description: Share link creation information
+        in: body
+        name: share
+        required: true
+        schema:
+          $ref: '#/definitions/models.ShareLinkCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Share link created successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: File not found
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a share link
+      tags:
+      - shares
+  /shares/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a share link permanently
+      parameters:
+      - description: Share link ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Share link deleted successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Invalid share link ID
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: Share link not found
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a share link
+      tags:
+      - shares
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a specific share link
+      parameters:
+      - description: Share link ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Share link retrieved successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Invalid share link ID
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: Share link not found
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a specific share link
+      tags:
+      - shares
+    put:
+      consumes:
+      - application/json
+      description: Update share link information including password, expiration, and
+        limits
+      parameters:
+      - description: Share link ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Share link update information
+        in: body
+        name: share
+        required: true
+        schema:
+          $ref: '#/definitions/models.ShareLinkUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Share link updated successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: Share link not found
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update share link
+      tags:
+      - shares
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer" followed by a space and JWT token.

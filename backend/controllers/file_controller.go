@@ -1,0 +1,373 @@
+package controllers
+
+import (
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/manjurulhoque/swift-share/backend/database"
+	"github.com/manjurulhoque/swift-share/backend/middleware"
+	"github.com/manjurulhoque/swift-share/backend/models"
+	"github.com/manjurulhoque/swift-share/backend/services"
+	"github.com/manjurulhoque/swift-share/backend/utils"
+)
+
+type FileController struct {
+	auditService *services.AuditService
+}
+
+func NewFileController() *FileController {
+	return &FileController{
+		auditService: services.NewAuditService(),
+	}
+}
+
+// UploadFile godoc
+// @Summary Upload a file
+// @Description Upload a file to the system
+// @Tags files
+// @Accept multipart/form-data
+// @Produce json
+// @Security BearerAuth
+// @Param file formData file true "File to upload"
+// @Param description formData string false "File description"
+// @Param tags formData string false "File tags"
+// @Param is_public formData bool false "Make file public"
+// @Success 201 {object} utils.APIResponse "File uploaded successfully"
+// @Failure 400 {object} utils.APIResponse "Validation error"
+// @Failure 401 {object} utils.APIResponse "Unauthorized"
+// @Failure 413 {object} utils.APIResponse "File too large"
+// @Failure 500 {object} utils.APIResponse "Internal server error"
+// @Router /files/upload [post]
+func (fc *FileController) UploadFile(c *gin.Context) {
+	user, exists := middleware.GetUserFromContext(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not found in context")
+		return
+	}
+
+	if err := c.Request.ParseMultipartForm(32 << 20); err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Failed to parse form")
+		return
+	}
+
+	file, header, err := c.Request.FormFile("file")
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "No file provided")
+		return
+	}
+	defer file.Close()
+
+	if header.Size > 10<<20 {
+		utils.ErrorResponse(c, http.StatusRequestEntityTooLarge, "File size exceeds 10MB limit")
+		return
+	}
+
+	description := c.PostForm("description")
+	tags := c.PostForm("tags")
+	isPublic := c.PostForm("is_public") == "true"
+
+	fileID := uuid.New()
+	fileExtension := filepath.Ext(header.Filename)
+	fileName := fileID.String() + fileExtension
+
+	uploadDir := "uploads"
+	if err := os.MkdirAll(uploadDir, 0755); err != nil {
+		utils.InternalServerErrorResponse(c, "Failed to create upload directory")
+		return
+	}
+
+	filePath := filepath.Join(uploadDir, fileName)
+
+	dst, err := os.Create(filePath)
+	if err != nil {
+		utils.InternalServerErrorResponse(c, "Failed to create file on disk")
+		return
+	}
+	defer dst.Close()
+
+	if _, err := io.Copy(dst, file); err != nil {
+		utils.InternalServerErrorResponse(c, "Failed to save file")
+		return
+	}
+
+	fileModel := models.File{
+		UserID:        user.ID,
+		FileName:      fileName,
+		OriginalName:  header.Filename,
+		FilePath:      filePath,
+		FileSize:      header.Size,
+		MimeType:      header.Header.Get("Content-Type"),
+		FileExtension: fileExtension,
+		IsPublic:      isPublic,
+		Description:   description,
+		Tags:          tags,
+	}
+
+	if err := database.GetDB().Create(&fileModel).Error; err != nil {
+		os.Remove(filePath)
+		utils.InternalServerErrorResponse(c, "Failed to save file record")
+		return
+	}
+
+	fc.auditService.LogEvent(&user.ID, models.ActionFileUpload, models.ResourceFile, &fileModel.ID,
+		fmt.Sprintf("File uploaded: %s", header.Filename), c.ClientIP(), c.GetHeader("User-Agent"), models.StatusSuccess)
+
+	utils.SuccessResponse(c, http.StatusCreated, "File uploaded successfully", fileModel.ToResponse())
+}
+
+// GetFiles godoc
+// @Summary Get user files
+// @Description Get a paginated list of user's files
+// @Tags files
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param page query int false "Page number (default: 1)"
+// @Param limit query int false "Items per page (default: 10, max: 100)"
+// @Param search query string false "Search term for file name or description"
+// @Success 200 {object} utils.APIResponse "Files retrieved successfully"
+// @Failure 400 {object} utils.APIResponse "Validation error"
+// @Failure 401 {object} utils.APIResponse "Unauthorized"
+// @Router /files [get]
+func (fc *FileController) GetFiles(c *gin.Context) {
+	user, exists := middleware.GetUserFromContext(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not found in context")
+		return
+	}
+
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	search := c.Query("search")
+
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 10
+	}
+
+	query := database.GetDB().Where("user_id = ?", user.ID)
+
+	if search != "" {
+		query = query.Where("original_name LIKE ? OR description LIKE ?", "%"+search+"%", "%"+search+"%")
+	}
+
+	var total int64
+	query.Model(&models.File{}).Count(&total)
+
+	var files []models.File
+	offset := (page - 1) * limit
+	if err := query.Offset(offset).Limit(limit).Order("created_at DESC").Find(&files).Error; err != nil {
+		utils.InternalServerErrorResponse(c, "Failed to retrieve files")
+		return
+	}
+
+	var responses []models.FileResponse
+	for _, file := range files {
+		responses = append(responses, file.ToResponse())
+	}
+
+	response := gin.H{
+		"files": responses,
+		"pagination": gin.H{
+			"page":        page,
+			"limit":       limit,
+			"total":       total,
+			"total_pages": (int(total) + limit - 1) / limit,
+		},
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, "Files retrieved successfully", response)
+}
+
+// GetFile godoc
+// @Summary Get a specific file
+// @Description Get detailed information about a specific file
+// @Tags files
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "File ID"
+// @Success 200 {object} utils.APIResponse "File retrieved successfully"
+// @Failure 400 {object} utils.APIResponse "Invalid file ID"
+// @Failure 401 {object} utils.APIResponse "Unauthorized"
+// @Failure 404 {object} utils.APIResponse "File not found"
+// @Router /files/{id} [get]
+func (fc *FileController) GetFile(c *gin.Context) {
+	user, exists := middleware.GetUserFromContext(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not found in context")
+		return
+	}
+
+	fileID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid file ID")
+		return
+	}
+
+	var file models.File
+	if err := database.GetDB().Where("id = ? AND user_id = ?", fileID, user.ID).First(&file).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusNotFound, "File not found")
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, "File retrieved successfully", file.ToResponse())
+}
+
+// UpdateFile godoc
+// @Summary Update file information
+// @Description Update file description, tags, or public status
+// @Tags files
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "File ID"
+// @Param file body models.FileUpdateRequest true "File update information"
+// @Success 200 {object} utils.APIResponse "File updated successfully"
+// @Failure 400 {object} utils.APIResponse "Validation error"
+// @Failure 401 {object} utils.APIResponse "Unauthorized"
+// @Failure 404 {object} utils.APIResponse "File not found"
+// @Router /files/{id} [put]
+func (fc *FileController) UpdateFile(c *gin.Context) {
+	user, exists := middleware.GetUserFromContext(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not found in context")
+		return
+	}
+
+	fileID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid file ID")
+		return
+	}
+
+	var req models.FileUpdateRequest
+	if !utils.BindAndValidate(c, &req) {
+		return
+	}
+
+	var file models.File
+	if err := database.GetDB().Where("id = ? AND user_id = ?", fileID, user.ID).First(&file).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusNotFound, "File not found")
+		return
+	}
+
+	file.Description = req.Description
+	file.Tags = req.Tags
+	file.IsPublic = req.IsPublic
+
+	if err := database.GetDB().Save(&file).Error; err != nil {
+		utils.InternalServerErrorResponse(c, "Failed to update file")
+		return
+	}
+
+	fc.auditService.LogEvent(&user.ID, models.ActionFileUpdate, models.ResourceFile, &file.ID,
+		fmt.Sprintf("File updated: %s", file.OriginalName), c.ClientIP(), c.GetHeader("User-Agent"), models.StatusSuccess)
+
+	utils.SuccessResponse(c, http.StatusOK, "File updated successfully", file.ToResponse())
+}
+
+// DeleteFile godoc
+// @Summary Delete a file
+// @Description Delete a file and its physical file from disk
+// @Tags files
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "File ID"
+// @Success 200 {object} utils.APIResponse "File deleted successfully"
+// @Failure 400 {object} utils.APIResponse "Invalid file ID"
+// @Failure 401 {object} utils.APIResponse "Unauthorized"
+// @Failure 404 {object} utils.APIResponse "File not found"
+// @Router /files/{id} [delete]
+func (fc *FileController) DeleteFile(c *gin.Context) {
+	user, exists := middleware.GetUserFromContext(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not found in context")
+		return
+	}
+
+	fileID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid file ID")
+		return
+	}
+
+	var file models.File
+	if err := database.GetDB().Where("id = ? AND user_id = ?", fileID, user.ID).First(&file).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusNotFound, "File not found")
+		return
+	}
+
+	if err := os.Remove(file.FilePath); err != nil && !os.IsNotExist(err) {
+		utils.InternalServerErrorResponse(c, "Failed to delete physical file")
+		return
+	}
+
+	if err := database.GetDB().Delete(&file).Error; err != nil {
+		utils.InternalServerErrorResponse(c, "Failed to delete file record")
+		return
+	}
+
+	fc.auditService.LogEvent(&user.ID, models.ActionFileDelete, models.ResourceFile, &file.ID,
+		fmt.Sprintf("File deleted: %s", file.OriginalName), c.ClientIP(), c.GetHeader("User-Agent"), models.StatusSuccess)
+
+	utils.SuccessResponse(c, http.StatusOK, "File deleted successfully", nil)
+}
+
+// DownloadFile godoc
+// @Summary Download a file
+// @Description Download a file by ID
+// @Tags files
+// @Accept json
+// @Produce octet-stream
+// @Security BearerAuth
+// @Param id path string true "File ID"
+// @Success 200 {file} binary "File content"
+// @Failure 400 {object} utils.APIResponse "Invalid file ID"
+// @Failure 401 {object} utils.APIResponse "Unauthorized"
+// @Failure 404 {object} utils.APIResponse "File not found"
+// @Router /files/{id}/download [get]
+func (fc *FileController) DownloadFile(c *gin.Context) {
+	user, exists := middleware.GetUserFromContext(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not found in context")
+		return
+	}
+
+	fileID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid file ID")
+		return
+	}
+
+	var file models.File
+	if err := database.GetDB().Where("id = ? AND user_id = ?", fileID, user.ID).First(&file).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusNotFound, "File not found")
+		return
+	}
+
+	if _, err := os.Stat(file.FilePath); os.IsNotExist(err) {
+		utils.ErrorResponse(c, http.StatusNotFound, "File not found on disk")
+		return
+	}
+
+	database.GetDB().Model(&file).Update("download_count", file.DownloadCount+1)
+
+	fc.auditService.LogEvent(&user.ID, models.ActionFileDownload, models.ResourceFile, &file.ID,
+		fmt.Sprintf("File downloaded: %s", file.OriginalName), c.ClientIP(), c.GetHeader("User-Agent"), models.StatusSuccess)
+
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", file.OriginalName))
+	c.Header("Content-Type", file.MimeType)
+	c.Header("Content-Length", fmt.Sprintf("%d", file.FileSize))
+
+	c.File(file.FilePath)
+}

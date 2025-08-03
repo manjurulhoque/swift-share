@@ -56,6 +56,7 @@ const (
 	ActionFileUpdate     = "file_update"
 	ActionShareCreate    = "share_create"
 	ActionShareAccess    = "share_access"
+	ActionShareUpdate    = "share_update"
 	ActionShareDelete    = "share_delete"
 	ActionUserUpdate     = "user_update"
 	ActionUserDelete     = "user_delete"
