@@ -9,6 +9,7 @@ import (
 	"github.com/manjurulhoque/swift-share/backend/docs"
 	"github.com/manjurulhoque/swift-share/backend/middleware"
 	"github.com/manjurulhoque/swift-share/backend/routes"
+	"github.com/manjurulhoque/swift-share/backend/storage"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
@@ -47,6 +48,12 @@ func main() {
 
 	// Run database migrations
 	database.Migrate()
+
+	// Initialize storage service
+	if err := storage.InitDefaultStorage(); err != nil {
+		logger.Error("Failed to initialize storage", "error", err)
+		os.Exit(1)
+	}
 
 	// Create Gin router
 	router := gin.New()

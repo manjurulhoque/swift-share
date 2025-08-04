@@ -8,6 +8,9 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/manjurulhoque/swift-share/backend/config"
+	"github.com/manjurulhoque/swift-share/backend/storage"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/manjurulhoque/swift-share/backend/database"
@@ -76,23 +79,19 @@ func (fc *FileController) UploadFile(c *gin.Context) {
 	fileExtension := filepath.Ext(header.Filename)
 	fileName := fileID.String() + fileExtension
 
-	uploadDir := "uploads"
-	if err := os.MkdirAll(uploadDir, 0755); err != nil {
-		utils.InternalServerErrorResponse(c, "Failed to create upload directory")
-		return
-	}
-
-	filePath := filepath.Join(uploadDir, fileName)
-
-	dst, err := os.Create(filePath)
+	// Read the uploaded file into memory (could be streamed to avoid large memory, but max size is limited)
+	fileBytes, err := io.ReadAll(file)
 	if err != nil {
-		utils.InternalServerErrorResponse(c, "Failed to create file on disk")
+		utils.InternalServerErrorResponse(c, "Failed to read uploaded file")
 		return
 	}
-	defer dst.Close()
 
-	if _, err := io.Copy(dst, file); err != nil {
-		utils.InternalServerErrorResponse(c, "Failed to save file")
+	// Upload to configured storage backend
+	storageSvc := storage.GetStorage()
+	objectKey := filepath.Join(user.ID.String(), fileName) // folder per user
+	urlOrPath, err := storageSvc.UploadFile(c.Request.Context(), objectKey, fileBytes, header.Header.Get("Content-Type"))
+	if err != nil {
+		utils.InternalServerErrorResponse(c, "Failed to upload file to storage")
 		return
 	}
 
@@ -100,7 +99,7 @@ func (fc *FileController) UploadFile(c *gin.Context) {
 		UserID:        user.ID,
 		FileName:      fileName,
 		OriginalName:  header.Filename,
-		FilePath:      filePath,
+		FilePath:      urlOrPath,
 		FileSize:      header.Size,
 		MimeType:      header.Header.Get("Content-Type"),
 		FileExtension: fileExtension,
@@ -110,7 +109,7 @@ func (fc *FileController) UploadFile(c *gin.Context) {
 	}
 
 	if err := database.GetDB().Create(&fileModel).Error; err != nil {
-		os.Remove(filePath)
+		storageSvc.DeleteFile(c.Request.Context(), objectKey)
 		utils.InternalServerErrorResponse(c, "Failed to save file record")
 		return
 	}
@@ -307,10 +306,9 @@ func (fc *FileController) DeleteFile(c *gin.Context) {
 		return
 	}
 
-	if err := os.Remove(file.FilePath); err != nil && !os.IsNotExist(err) {
-		utils.InternalServerErrorResponse(c, "Failed to delete physical file")
-		return
-	}
+	// Delete from storage backend
+	storageSvc := storage.GetStorage()
+	_ = storageSvc.DeleteFile(c.Request.Context(), filepath.Join(user.ID.String(), file.FileName))
 
 	if err := database.GetDB().Delete(&file).Error; err != nil {
 		utils.InternalServerErrorResponse(c, "Failed to delete file record")
@@ -355,19 +353,27 @@ func (fc *FileController) DownloadFile(c *gin.Context) {
 		return
 	}
 
-	if _, err := os.Stat(file.FilePath); os.IsNotExist(err) {
-		utils.ErrorResponse(c, http.StatusNotFound, "File not found on disk")
-		return
-	}
-
+	// Increment download count
 	database.GetDB().Model(&file).Update("download_count", file.DownloadCount+1)
 
 	fc.auditService.LogEvent(&user.ID, models.ActionFileDownload, models.ResourceFile, &file.ID,
 		fmt.Sprintf("File downloaded: %s", file.OriginalName), c.ClientIP(), c.GetHeader("User-Agent"), models.StatusSuccess)
 
+	// Serve or redirect depending on storage driver
+	if config.AppConfig.Storage.Driver == "s3" {
+		// For now, redirect to the S3 object URL stored in FilePath
+		c.Redirect(http.StatusTemporaryRedirect, file.FilePath)
+		return
+	}
+
+	// Local storage – serve file from disk
+	if _, err := os.Stat(file.FilePath); os.IsNotExist(err) {
+		utils.ErrorResponse(c, http.StatusNotFound, "File not found on disk")
+		return
+	}
+
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", file.OriginalName))
 	c.Header("Content-Type", file.MimeType)
 	c.Header("Content-Length", fmt.Sprintf("%d", file.FileSize))
-
 	c.File(file.FilePath)
 }

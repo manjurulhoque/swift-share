@@ -15,6 +15,7 @@ type Config struct {
 	Database DatabaseConfig
 	JWT      JWTConfig
 	Upload   UploadConfig
+	Storage  StorageConfig
 	CORS     CORSConfig
 	Redis    RedisConfig
 	Email    EmailConfig
@@ -46,6 +47,16 @@ type UploadConfig struct {
 	MaxFileSize      int64
 	UploadPath       string
 	AllowedFileTypes []string
+}
+
+type StorageConfig struct {
+	Driver       string // local, s3, gcs
+	LocalPath    string
+	S3Bucket     string
+	S3Region     string
+	S3AccessKey  string
+	S3SecretKey  string
+	S3Endpoint   string // optional custom endpoint
 }
 
 type CORSConfig struct {
@@ -110,6 +121,15 @@ func LoadConfig() {
 			MaxFileSize:      getEnvAsInt64("MAX_FILE_SIZE", 104857600), // 100MB
 			UploadPath:       getEnv("UPLOAD_PATH", "./uploads"),
 			AllowedFileTypes: getEnvAsSlice("ALLOWED_FILE_TYPES", []string{"jpg", "jpeg", "png", "pdf", "doc", "docx", "txt", "zip"}),
+		},
+		Storage: StorageConfig{
+			Driver:      getEnv("STORAGE_DRIVER", "local"),
+			LocalPath:   getEnv("LOCAL_UPLOAD_PATH", "./uploads"),
+			S3Bucket:    getEnv("AWS_S3_BUCKET", ""),
+			S3Region:    getEnv("AWS_REGION", ""),
+			S3AccessKey: getEnv("AWS_ACCESS_KEY_ID", ""),
+			S3SecretKey: getEnv("AWS_SECRET_ACCESS_KEY", ""),
+			S3Endpoint:  getEnv("AWS_S3_ENDPOINT", ""),
 		},
 		CORS: CORSConfig{
 			AllowedOrigins: getEnvAsSlice("ALLOWED_ORIGINS", []string{"http://localhost:3000"}),
