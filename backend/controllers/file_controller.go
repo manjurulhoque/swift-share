@@ -163,7 +163,7 @@ func (fc *FileController) GetFiles(c *gin.Context) {
 
 	var files []models.File
 	offset := (page - 1) * limit
-	if err := query.Offset(offset).Limit(limit).Order("created_at DESC").Find(&files).Error; err != nil {
+	if err := query.Preload("User").Offset(offset).Limit(limit).Order("created_at DESC").Find(&files).Error; err != nil {
 		utils.InternalServerErrorResponse(c, "Failed to retrieve files")
 		return
 	}
@@ -213,7 +213,7 @@ func (fc *FileController) GetFile(c *gin.Context) {
 	}
 
 	var file models.File
-	if err := database.GetDB().Where("id = ? AND user_id = ?", fileID, user.ID).First(&file).Error; err != nil {
+	if err := database.GetDB().Preload("User").Where("id = ? AND user_id = ?", fileID, user.ID).First(&file).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusNotFound, "File not found")
 		return
 	}
@@ -254,7 +254,7 @@ func (fc *FileController) UpdateFile(c *gin.Context) {
 	}
 
 	var file models.File
-	if err := database.GetDB().Where("id = ? AND user_id = ?", fileID, user.ID).First(&file).Error; err != nil {
+	if err := database.GetDB().Preload("User").Where("id = ? AND user_id = ?", fileID, user.ID).First(&file).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusNotFound, "File not found")
 		return
 	}
@@ -360,7 +360,7 @@ func (fc *FileController) DownloadFile(c *gin.Context) {
 		fmt.Sprintf("File downloaded: %s", file.OriginalName), c.ClientIP(), c.GetHeader("User-Agent"), models.StatusSuccess)
 
 	// Serve or redirect depending on storage driver
-	if config.AppConfig.Storage.Driver == "s3" {
+	if config.AppConfig.Storage.IsS3() {
 		// For now, redirect to the S3 object URL stored in FilePath
 		c.Redirect(http.StatusTemporaryRedirect, file.FilePath)
 		return

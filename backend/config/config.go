@@ -50,13 +50,21 @@ type UploadConfig struct {
 }
 
 type StorageConfig struct {
-	Driver       string // local, s3, gcs
-	LocalPath    string
-	S3Bucket     string
-	S3Region     string
-	S3AccessKey  string
-	S3SecretKey  string
-	S3Endpoint   string // optional custom endpoint
+	Driver      string // local, s3, gcs
+	LocalPath   string
+	S3Bucket    string
+	S3Region    string
+	S3AccessKey string
+	S3SecretKey string
+	S3Endpoint  string // optional custom endpoint
+}
+
+func (s *StorageConfig) IsS3() bool {
+	return s.Driver == "s3"
+}
+
+func (s *StorageConfig) IsLocal() bool {
+	return s.Driver == "local"
 }
 
 type CORSConfig struct {

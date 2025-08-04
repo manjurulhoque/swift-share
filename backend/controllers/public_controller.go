@@ -46,7 +46,7 @@ func (pc *PublicController) AccessShareLink(c *gin.Context) {
 	}
 
 	var shareLink models.ShareLink
-	if err := database.GetDB().Where("token = ?", token).Preload("File").First(&shareLink).Error; err != nil {
+	if err := database.GetDB().Where("token = ?", token).Preload("File.User").Preload("User").First(&shareLink).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusNotFound, "Share link not found")
 		return
 	}
@@ -107,7 +107,7 @@ func (pc *PublicController) DownloadSharedFile(c *gin.Context) {
 	}
 
 	var shareLink models.ShareLink
-	if err := database.GetDB().Where("token = ?", token).Preload("File").First(&shareLink).Error; err != nil {
+	if err := database.GetDB().Where("token = ?", token).Preload("File.User").Preload("User").First(&shareLink).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusNotFound, "Share link not found")
 		return
 	}

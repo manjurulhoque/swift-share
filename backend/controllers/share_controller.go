@@ -72,7 +72,7 @@ func (sc *ShareController) CreateShareLink(c *gin.Context) {
 	}
 
 	// Load file data for response
-	database.GetDB().Preload("File").First(&shareLink, shareLink.ID)
+	database.GetDB().Preload("File.User").Preload("User").First(&shareLink, shareLink.ID)
 
 	sc.auditService.LogEvent(&user.ID, models.ActionShareCreate, models.ResourceShareLink, &shareLink.ID,
 		fmt.Sprintf("Share link created for file: %s", file.OriginalName), c.ClientIP(), c.GetHeader("User-Agent"), models.StatusSuccess)
@@ -112,7 +112,7 @@ func (sc *ShareController) GetShareLinks(c *gin.Context) {
 		limit = 10
 	}
 
-	query := database.GetDB().Where("user_id = ?", user.ID).Preload("File")
+	query := database.GetDB().Where("user_id = ?", user.ID).Preload("File.User").Preload("User")
 
 	if search != "" {
 		query = query.Joins("JOIN files ON share_links.file_id = files.id").
@@ -174,7 +174,7 @@ func (sc *ShareController) GetShareLink(c *gin.Context) {
 	}
 
 	var shareLink models.ShareLink
-	if err := database.GetDB().Where("id = ? AND user_id = ?", shareID, user.ID).Preload("File").First(&shareLink).Error; err != nil {
+	if err := database.GetDB().Where("id = ? AND user_id = ?", shareID, user.ID).Preload("File.User").Preload("User").First(&shareLink).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusNotFound, "Share link not found")
 		return
 	}
@@ -233,6 +233,9 @@ func (sc *ShareController) UpdateShareLink(c *gin.Context) {
 		utils.InternalServerErrorResponse(c, "Failed to update share link")
 		return
 	}
+
+	// Reload with relationships for response
+	database.GetDB().Preload("File.User").Preload("User").First(&shareLink, shareLink.ID)
 
 	sc.auditService.LogEvent(&user.ID, models.ActionShareUpdate, models.ResourceShareLink, &shareLink.ID,
 		"Share link updated", c.ClientIP(), c.GetHeader("User-Agent"), models.StatusSuccess)
