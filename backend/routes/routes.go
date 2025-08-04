@@ -56,6 +56,7 @@ func SetupRoutes(router *gin.Engine) {
 				shares.GET("/:id", shareController.GetShareLink)
 				shares.PUT("/:id", shareController.UpdateShareLink)
 				shares.DELETE("/:id", shareController.DeleteShareLink)
+				shares.POST("/:id/presigned-url", shareController.GeneratePresignedURL)
 			}
 		}
 
@@ -74,6 +75,7 @@ func SetupRoutes(router *gin.Engine) {
 		{
 			public.GET("/share/:token", publicController.AccessShareLink)
 			public.POST("/share/:token/download", publicController.DownloadSharedFile)
+			public.POST("/share/:token/presigned-url", publicController.GeneratePresignedURL)
 		}
 	}
 
@@ -105,9 +107,12 @@ func SetupRoutes(router *gin.Engine) {
 					"POST /api/v1/files/upload": "Upload file (protected)",
 				},
 				"shares": gin.H{
-					"GET  /api/v1/shares":              "List user shares (protected)",
-					"POST /api/v1/shares":              "Create share link (protected)",
-					"GET  /api/v1/public/share/:token": "Access shared file (public)",
+					"GET  /api/v1/shares":                            "List user shares (protected)",
+					"POST /api/v1/shares":                            "Create share link (protected)",
+					"POST /api/v1/shares/:id/presigned-url":          "Generate pre-signed URL (protected)",
+					"GET  /api/v1/public/share/:token":               "Access shared file (public)",
+					"POST /api/v1/public/share/:token/download":      "Download shared file (public)",
+					"POST /api/v1/public/share/:token/presigned-url": "Generate pre-signed URL (public)",
 				},
 				"admin": gin.H{
 					"GET /api/v1/admin/users":      "List all users (admin)",

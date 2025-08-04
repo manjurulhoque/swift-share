@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"path/filepath"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -11,6 +13,7 @@ import (
 	"github.com/manjurulhoque/swift-share/backend/middleware"
 	"github.com/manjurulhoque/swift-share/backend/models"
 	"github.com/manjurulhoque/swift-share/backend/services"
+	"github.com/manjurulhoque/swift-share/backend/storage"
 	"github.com/manjurulhoque/swift-share/backend/utils"
 )
 
@@ -71,13 +74,14 @@ func (sc *ShareController) CreateShareLink(c *gin.Context) {
 		return
 	}
 
-	// Load file data for response
-	database.GetDB().Preload("File.User").Preload("User").First(&shareLink, shareLink.ID)
-
 	sc.auditService.LogEvent(&user.ID, models.ActionShareCreate, models.ResourceShareLink, &shareLink.ID,
 		fmt.Sprintf("Share link created for file: %s", file.OriginalName), c.ClientIP(), c.GetHeader("User-Agent"), models.StatusSuccess)
 
-	utils.SuccessResponse(c, http.StatusCreated, "Share link created successfully", shareLink.ToResponse())
+	// Return just the token
+	utils.SuccessResponse(c, http.StatusCreated, "Share link created successfully", gin.H{
+		"token": shareLink.Token,
+		"id":    shareLink.ID,
+	})
 }
 
 // GetShareLinks godoc
@@ -284,4 +288,82 @@ func (sc *ShareController) DeleteShareLink(c *gin.Context) {
 		"Share link deleted", c.ClientIP(), c.GetHeader("User-Agent"), models.StatusSuccess)
 
 	utils.SuccessResponse(c, http.StatusOK, "Share link deleted successfully", nil)
+}
+
+// GeneratePresignedURL godoc
+// @Summary Generate a pre-signed URL for file download
+// @Description Generate a pre-signed URL with expiration time for secure file download
+// @Tags shares
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Share link ID"
+// @Param expiration query int false "Expiration time in minutes (default: 10, max: 1440)"
+// @Success 200 {object} utils.APIResponse "Pre-signed URL generated successfully"
+// @Failure 400 {object} utils.APIResponse "Invalid share link ID or expiration"
+// @Failure 401 {object} utils.APIResponse "Unauthorized"
+// @Failure 404 {object} utils.APIResponse "Share link not found"
+// @Router /shares/{id}/presigned-url [post]
+func (sc *ShareController) GeneratePresignedURL(c *gin.Context) {
+	user, exists := middleware.GetUserFromContext(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not found in context")
+		return
+	}
+
+	shareID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid share link ID")
+		return
+	}
+
+	// Parse expiration time (default 10 minutes, max 24 hours)
+	expirationMinutes, _ := strconv.Atoi(c.DefaultQuery("expiration", "10"))
+	if expirationMinutes < 1 || expirationMinutes > 1440 {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Expiration must be between 1 and 1440 minutes")
+		return
+	}
+
+	expiration := time.Duration(expirationMinutes) * time.Minute
+
+	// Get share link
+	var shareLink models.ShareLink
+	if err := database.GetDB().Where("id = ? AND user_id = ?", shareID, user.ID).First(&shareLink).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusNotFound, "Share link not found")
+		return
+	}
+
+	// Check if share link is accessible
+	if !shareLink.IsAccessible() {
+		utils.ErrorResponse(c, http.StatusForbidden, "Share link is not accessible")
+		return
+	}
+
+	// Get file information
+	var file models.File
+	if err := database.GetDB().Where("id = ?", shareLink.FileID).First(&file).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusNotFound, "File not found")
+		return
+	}
+
+	// Generate pre-signed URL
+	storageSvc := storage.GetStorage()
+	key := filepath.Join(file.UserID.String(), file.FileName)
+	url, err := storageSvc.GeneratePresignedURL(c.Request.Context(), key, expiration)
+	if err != nil {
+		utils.InternalServerErrorResponse(c, "Failed to generate pre-signed URL")
+		return
+	}
+
+	sc.auditService.LogEvent(&user.ID, models.ActionShareAccess, models.ResourceShareLink, &shareLink.ID,
+		fmt.Sprintf("Pre-signed URL generated for file: %s", file.OriginalName), c.ClientIP(), c.GetHeader("User-Agent"), models.StatusSuccess)
+
+	utils.SuccessResponse(c, http.StatusOK, "Pre-signed URL generated successfully", gin.H{
+		"url":        url,
+		"expires_in": expirationMinutes,
+		"expires_at": time.Now().Add(expiration),
+		"file_name":  file.OriginalName,
+		"file_size":  file.FileSize,
+		"mime_type":  file.MimeType,
+	})
 }

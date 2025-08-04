@@ -618,7 +618,7 @@ paths:
         required: true
         type: string
       - description: Share link password (if required)
-        in: formData
+        in: query
         name: password
         type: string
       produces:
@@ -659,7 +659,7 @@ paths:
         required: true
         type: string
       - description: Share link password (if required)
-        in: formData
+        in: query
         name: password
         type: string
       produces:
@@ -686,6 +686,52 @@ paths:
           schema:
             $ref: '#/definitions/utils.APIResponse'
       summary: Download a shared file
+      tags:
+      - public
+  /public/share/{token}/presigned-url:
+    post:
+      consumes:
+      - application/json
+      description: Generate a pre-signed URL with expiration time for secure file
+        download
+      parameters:
+      - description: Share token
+        in: path
+        name: token
+        required: true
+        type: string
+      - description: Share link password (if required)
+        in: query
+        name: password
+        type: string
+      - description: 'Expiration time in minutes (default: 10, max: 1440)'
+        in: query
+        name: expiration
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Pre-signed URL generated successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Invalid token or expiration
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Password required or invalid
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "403":
+          description: Share link not accessible
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: Share link not found
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Generate a pre-signed URL for public file download
       tags:
       - public
   /shares:
@@ -869,6 +915,46 @@ paths:
       security:
       - BearerAuth: []
       summary: Update share link
+      tags:
+      - shares
+  /shares/{id}/presigned-url:
+    post:
+      consumes:
+      - application/json
+      description: Generate a pre-signed URL with expiration time for secure file
+        download
+      parameters:
+      - description: Share link ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 'Expiration time in minutes (default: 10, max: 1440)'
+        in: query
+        name: expiration
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Pre-signed URL generated successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Invalid share link ID or expiration
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: Share link not found
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Generate a pre-signed URL for file download
       tags:
       - shares
 securityDefinitions:
