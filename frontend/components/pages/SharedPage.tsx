@@ -17,7 +17,7 @@ import { Share2, Search, Filter } from "lucide-react";
 import { ShareLink } from "@/types/share";
 import { redirect, RedirectType } from "next/navigation";
 import { SidebarInset, SidebarTrigger } from "../ui/sidebar";
-import { ShareLinkCard } from "@/components/ui/share-link-card";
+import { ShareLinkCard } from "@/components/cards/share-link-card";
 
 export default function SharedPage() {
     const { isAuthenticated, isLoading: isAuthLoading } = useAuth();

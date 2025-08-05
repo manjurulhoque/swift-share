@@ -4,12 +4,7 @@ import React, { useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-    Search,
-    Filter,
-    Upload,
-    File as FileIcon,
-} from "lucide-react";
+import { Search, Filter, Upload, File as FileIcon } from "lucide-react";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import {
     Dialog,
@@ -33,7 +28,7 @@ import {
 import { File } from "@/types/file";
 import { useAuth } from "@/hooks/use-auth";
 import { redirect, RedirectType } from "next/navigation";
-import { FileCard } from "@/components/ui/file-card";
+import { FileCard } from "@/components/cards/file-card";
 
 export default function FilesPage() {
     const [searchTerm, setSearchTerm] = useState("");
