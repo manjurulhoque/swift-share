@@ -3,7 +3,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import QueryProvider from "./providers/QueryProvider";
+import { Providers } from "@/components/providers/Providers";
 
 export const metadata: Metadata = {
     title: "CloudShare - Secure File Sharing",
@@ -19,13 +19,13 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body>
-                <QueryProvider>
+                <Providers>
                     <TooltipProvider>
                         <Toaster />
                         <Sonner />
                         {children}
                     </TooltipProvider>
-                </QueryProvider>
+                </Providers>
             </body>
         </html>
     );

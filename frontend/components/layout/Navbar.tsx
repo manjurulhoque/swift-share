@@ -4,10 +4,30 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Share, LogIn, UserPlus, Home, Upload, Users } from "lucide-react";
+import {
+    Share,
+    LogIn,
+    UserPlus,
+    Home,
+    Upload,
+    Users,
+    User,
+    LogOut,
+} from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const Navbar = () => {
     const pathname = usePathname();
+    const { session, isAuthenticated, logout } = useAuth();
 
     const isActive = (path: string) => pathname === path;
 
@@ -61,26 +81,105 @@ const Navbar = () => {
                             <span>Admin</span>
                         </Link>
 
-                        <Link href="/login">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="flex items-center space-x-1"
-                            >
-                                <LogIn className="h-4 w-4" />
-                                <span>Login</span>
-                            </Button>
-                        </Link>
+                        {isAuthenticated ? (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        className="relative h-8 w-8 rounded-full"
+                                    >
+                                        <Avatar className="h-8 w-8">
+                                            <AvatarFallback>
+                                                {session?.user?.firstName?.charAt(
+                                                    0
+                                                ) ||
+                                                    session?.user?.name?.charAt(
+                                                        0
+                                                    ) ||
+                                                    "U"}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                    className="w-56"
+                                    align="end"
+                                    forceMount
+                                >
+                                    <DropdownMenuLabel className="font-normal">
+                                        <div className="flex flex-col space-y-1">
+                                            <p className="text-sm font-medium leading-none">
+                                                {session?.user?.name}
+                                            </p>
+                                            <p className="text-xs leading-none text-muted-foreground">
+                                                {session?.user?.email}
+                                            </p>
+                                        </div>
+                                    </DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem asChild>
+                                        <Link
+                                            href="/dashboard"
+                                            className="flex items-center"
+                                        >
+                                            <Upload className="mr-2 h-4 w-4" />
+                                            <span>Dashboard</span>
+                                        </Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem asChild>
+                                        <Link
+                                            href="/profile"
+                                            className="flex items-center"
+                                        >
+                                            <User className="mr-2 h-4 w-4" />
+                                            <span>Profile</span>
+                                        </Link>
+                                    </DropdownMenuItem>
+                                    {session?.user?.isAdmin && (
+                                        <DropdownMenuItem asChild>
+                                            <Link
+                                                href="/admin"
+                                                className="flex items-center"
+                                            >
+                                                <Users className="mr-2 h-4 w-4" />
+                                                <span>Admin Panel</span>
+                                            </Link>
+                                        </DropdownMenuItem>
+                                    )}
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                        onClick={logout}
+                                        className="flex items-center"
+                                    >
+                                        <LogOut className="mr-2 h-4 w-4" />
+                                        <span>Log out</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        ) : (
+                            <>
+                                <Link href="/login">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="flex items-center space-x-1"
+                                    >
+                                        <LogIn className="h-4 w-4" />
+                                        <span>Login</span>
+                                    </Button>
+                                </Link>
 
-                        <Link href="/signup">
-                            <Button
-                                size="sm"
-                                className="flex items-center space-x-1"
-                            >
-                                <UserPlus className="h-4 w-4" />
-                                <span>Sign Up</span>
-                            </Button>
-                        </Link>
+                                <Link href="/signup">
+                                    <Button
+                                        size="sm"
+                                        className="flex items-center space-x-1"
+                                    >
+                                        <UserPlus className="h-4 w-4" />
+                                        <span>Sign Up</span>
+                                    </Button>
+                                </Link>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>

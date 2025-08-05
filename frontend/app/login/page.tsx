@@ -13,6 +13,8 @@ import {
     CardDescription,
 } from "@/components/ui/card";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
@@ -20,10 +22,17 @@ export default function LoginPage() {
         email: "",
         password: "",
     });
+    const { login, isLoading } = useAuth();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("Login attempt:", formData);
+
+        try {
+            await login(formData);
+            toast.success("Login successful!");
+        } catch (error) {
+            toast.error("Invalid email or password");
+        }
     };
 
     return (
@@ -118,8 +127,12 @@ export default function LoginPage() {
                             </Link>
                         </div>
 
-                        <Button type="submit" className="w-full">
-                            Sign in
+                        <Button
+                            type="submit"
+                            className="w-full"
+                            disabled={isLoading}
+                        >
+                            {isLoading ? "Signing in..." : "Sign in"}
                         </Button>
                     </form>
 
