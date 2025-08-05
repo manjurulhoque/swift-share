@@ -3,10 +3,9 @@
 import React, { useState, useCallback } from "react";
 import { useGetSharesQuery } from "@/store/api/sharesApi";
 import { useAuth } from "@/hooks/use-auth";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
     Dialog,
     DialogContent,
@@ -14,19 +13,11 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import {
-    File as FileIcon,
-    Share2,
-    Edit,
-    Search,
-    Upload,
-    Copy,
-    Trash2,
-    Filter,
-} from "lucide-react";
+import { Share2, Search, Filter } from "lucide-react";
 import { ShareLink } from "@/types/share";
 import { redirect, RedirectType } from "next/navigation";
 import { SidebarInset, SidebarTrigger } from "../ui/sidebar";
+import { ShareLinkCard } from "@/components/ui/share-link-card";
 
 export default function SharedPage() {
     const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
@@ -97,27 +88,6 @@ export default function SharedPage() {
                 variant: "destructive",
             });
         }
-    };
-
-    const formatDate = (dateString: string): string => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-        });
-    };
-
-    const formatExpiryDate = (dateString: string | null): string => {
-        if (!dateString) return "Never";
-        const date = new Date(dateString);
-        return date.toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-        });
     };
 
     if (error) {
@@ -213,135 +183,16 @@ export default function SharedPage() {
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {shares.map((share) => (
-                                <Card
+                                <ShareLinkCard
                                     key={share.id}
-                                    className="hover:shadow-lg transition-shadow"
-                                >
-                                    <CardHeader className="pb-3">
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex items-center space-x-3">
-                                                <div className="p-2 bg-blue-100 rounded-lg">
-                                                    <FileIcon className="h-5 w-5 text-blue-600" />
-                                                </div>
-                                                <div className="flex-1 min-w-0 max-w-[200px]">
-                                                    <h3
-                                                        className="font-medium text-gray-900 truncate"
-                                                        title={
-                                                            share.file
-                                                                ?.original_name ||
-                                                            "Unknown file"
-                                                        }
-                                                    >
-                                                        {share.file
-                                                            ?.original_name ||
-                                                            "Unknown file"}
-                                                    </h3>
-                                                    <p className="text-sm text-gray-500">
-                                                        {share.file?.file_size
-                                                            ? `${(
-                                                                  share.file
-                                                                      .file_size /
-                                                                  1024 /
-                                                                  1024
-                                                              ).toFixed(2)} MB`
-                                                            : "Unknown size"}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <Badge
-                                                variant={
-                                                    share.is_active
-                                                        ? "default"
-                                                        : "secondary"
-                                                }
-                                                className="text-xs"
-                                            >
-                                                {share.is_active
-                                                    ? "Active"
-                                                    : "Inactive"}
-                                            </Badge>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent className="pt-0">
-                                        <div className="space-y-3">
-                                            <p className="text-sm text-gray-600 line-clamp-2">
-                                                {share.description ||
-                                                    "No description"}
-                                            </p>
-                                            <div className="flex items-center justify-between text-xs text-gray-500">
-                                                <div className="flex items-center space-x-4">
-                                                    <span>
-                                                        {formatDate(
-                                                            share.created_at
-                                                        )}
-                                                    </span>
-                                                    <span>
-                                                        {share.download_count}{" "}
-                                                        downloads
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div className="space-y-2 text-xs text-gray-500">
-                                                <div className="flex justify-between">
-                                                    <span>Expires:</span>
-                                                    <span>
-                                                        {formatExpiryDate(
-                                                            share.expires_at
-                                                        )}
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span>Max Downloads:</span>
-                                                    <span>
-                                                        {share.max_downloads ===
-                                                        0
-                                                            ? "Unlimited"
-                                                            : share.max_downloads}
-                                                    </span>
-                                                </div>
-                                                {share.has_password && (
-                                                    <div className="flex justify-between">
-                                                        <span>Password:</span>
-                                                        <span>Protected</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="flex items-center justify-between pt-2">
-                                                <div className="flex items-center space-x-2">
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={() =>
-                                                            handleCopyLink(
-                                                                share.token
-                                                            )
-                                                        }
-                                                    >
-                                                        <Copy className="h-4 w-4 mr-1" />
-                                                        Copy Link
-                                                    </Button>
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={() =>
-                                                            handleEdit(share)
-                                                        }
-                                                    >
-                                                        <Edit className="h-4 w-4 mr-1" />
-                                                        Edit
-                                                    </Button>
-                                                </div>
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                >
-                                                    <Trash2 className="h-4 w-4 mr-1" />
-                                                    Delete
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                                    share={share}
+                                    onCopyLink={handleCopyLink}
+                                    onEdit={handleEdit}
+                                    onDelete={() => {
+                                        // TODO: Implement delete functionality
+                                        console.log("Delete share:", share.id);
+                                    }}
+                                />
                             ))}
                         </div>
                     )}
