@@ -42,6 +42,7 @@ func SetupRoutes(router *gin.Engine) {
 			{
 				files.GET("/", fileController.GetFiles)
 				files.POST("/upload", fileController.UploadFile)
+				files.POST("/upload-multiple", fileController.UploadMultipleFiles)
 				files.GET("/:id", fileController.GetFile)
 				files.PUT("/:id", fileController.UpdateFile)
 				files.DELETE("/:id", fileController.DeleteFile)

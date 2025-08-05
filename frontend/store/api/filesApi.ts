@@ -36,6 +36,26 @@ export const filesApi = api.injectEndpoints({
             }),
         }),
 
+        uploadMultipleFiles: builder.mutation<
+            {
+                uploaded_files: File[];
+                total_files: number;
+                success_count: number;
+                error_count: number;
+                errors?: string[];
+            },
+            FormData
+        >({
+            query: (formData) => ({
+                url: API_ENDPOINTS.FILES.UPLOAD_MULTIPLE,
+                method: "POST",
+                body: formData,
+                headers: {
+                    // Don't set Content-Type for FormData, let the browser set it
+                },
+            }),
+        }),
+
         updateFile: builder.mutation<
             File,
             { id: string; data: FileUpdateRequest }
@@ -70,6 +90,7 @@ export const {
     useGetFilesQuery,
     useGetFileQuery,
     useUploadFileMutation,
+    useUploadMultipleFilesMutation,
     useUpdateFileMutation,
     useDeleteFileMutation,
     useDownloadFileMutation,

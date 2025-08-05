@@ -5,14 +5,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, File, X } from "lucide-react";
+import { Upload, File, X, Send, AlertCircle } from "lucide-react";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { useUploadMultipleFilesMutation } from "@/store/api/filesApi";
+import { useAuth } from "@/hooks/use-auth";
+import { redirect, RedirectType } from "next/navigation";
+import { toast } from "sonner";
 
 export default function UploadPage() {
+    const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
     const [files, setFiles] = useState<File[]>([]);
     const [recipients, setRecipients] = useState("");
     const [message, setMessage] = useState("");
     const [expiryDays, setExpiryDays] = useState(7);
+    const [uploadMultipleFiles, { isLoading: isUploading }] =
+        useUploadMultipleFilesMutation();
+
+    // Redirect if not authenticated
+    if (!isAuthLoading && !isAuthenticated) {
+        redirect("/login", RedirectType.replace);
+    }
 
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files) {
@@ -23,6 +35,49 @@ export default function UploadPage() {
 
     const removeFile = (index: number) => {
         setFiles((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const handleStartTransfer = async () => {
+        if (files.length === 0) {
+            toast.error("Please select at least one file");
+            return;
+        }
+
+        try {
+            const formData = new FormData();
+
+            // Add files to form data
+            files.forEach((file) => {
+                formData.append("files", file);
+            });
+
+            // Add other form data
+            formData.append("description", message);
+            formData.append("tags", "");
+            formData.append("is_public", "false");
+            formData.append("recipients", recipients);
+            formData.append("message", message);
+            formData.append("expiry_days", expiryDays.toString());
+
+            const result = await uploadMultipleFiles(formData).unwrap();
+
+            toast.success(
+                `Successfully uploaded ${result.success_count} files`
+            );
+
+            if (result.error_count > 0) {
+                toast.error(`${result.error_count} files failed to upload`);
+            }
+
+            // Clear form
+            setFiles([]);
+            setRecipients("");
+            setMessage("");
+            setExpiryDays(7);
+        } catch (error) {
+            console.error("Upload error:", error);
+            toast.error("Failed to upload files. Please try again.");
+        }
     };
 
     return (
@@ -121,6 +176,29 @@ export default function UploadPage() {
                                 <CardTitle>Transfer Settings</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
+                                {files.length > 0 && (
+                                    <div className="flex items-center p-3 bg-blue-50 rounded-lg">
+                                        <AlertCircle className="h-4 w-4 text-blue-600 mr-2" />
+                                        <span className="text-sm text-blue-700">
+                                            {files.length} file
+                                            {files.length > 1 ? "s" : ""}{" "}
+                                            selected for upload
+                                            {(() => {
+                                                const totalSize = files.reduce(
+                                                    (acc, file) =>
+                                                        acc + file.size,
+                                                    0
+                                                );
+                                                const totalSizeMB = (
+                                                    totalSize /
+                                                    1024 /
+                                                    1024
+                                                ).toFixed(2);
+                                                return ` (${totalSizeMB} MB total)`;
+                                            })()}
+                                        </span>
+                                    </div>
+                                )}
                                 <div>
                                     <label className="block text-sm font-medium mb-2">
                                         Recipients (optional)
@@ -166,10 +244,20 @@ export default function UploadPage() {
                                 <Button
                                     className="w-full"
                                     size="lg"
-                                    disabled={files.length === 0}
+                                    disabled={files.length === 0 || isUploading}
+                                    onClick={handleStartTransfer}
                                 >
-                                    <Upload className="h-4 w-4 mr-2" />
-                                    Start Transfer
+                                    {isUploading ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                            Uploading...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Send className="h-4 w-4 mr-2" />
+                                            Start Transfer
+                                        </>
+                                    )}
                                 </Button>
                             </CardContent>
                         </Card>

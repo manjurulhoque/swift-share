@@ -7,7 +7,7 @@ export const API_BASE_URL =
 // Custom base query with authentication and error handling
 const baseQuery = fetchBaseQuery({
     baseUrl: API_BASE_URL,
-    prepareHeaders: async (headers) => {
+    prepareHeaders: async (headers, api) => {
         // Get token from NextAuth session
         const session = await getSession();
         const token = session?.accessToken;
@@ -16,7 +16,12 @@ const baseQuery = fetchBaseQuery({
             headers.set("authorization", `Bearer ${token}`);
         }
 
-        headers.set("Content-Type", "application/json");
+        if (api.endpoint === "uploadMultipleFiles") {
+            // headers.set("Content-Type", "multipart/form-data");
+        } else {
+            headers.set("Content-Type", "application/json");
+        }
+
         return headers;
     },
 });
@@ -77,37 +82,38 @@ export const { usePrefetch } = api;
 // API Endpoints
 export const API_ENDPOINTS = {
     AUTH: {
-        LOGIN: "auth/login/",
-        REGISTER: "auth/register/",
-        REFRESH: "auth/refresh/",
-        PROFILE: "profile/",
-        CHANGE_PASSWORD: "password/change/",
-        RESET_PASSWORD: "password/reset/",
-        RESET_PASSWORD_CONFIRM: "password/reset/confirm/",
-        VERIFY_EMAIL: "email/verify/",
-        RESEND_VERIFICATION: "email/resend/",
+        LOGIN: "auth/login",
+        REGISTER: "auth/register",
+        REFRESH: "auth/refresh",
+        PROFILE: "profile",
+        CHANGE_PASSWORD: "password/change",
+        RESET_PASSWORD: "password/reset",
+        RESET_PASSWORD_CONFIRM: "password/reset/confirm",
+        VERIFY_EMAIL: "email/verify",
+        RESEND_VERIFICATION: "email/resend",
     },
     FILES: {
-        BASE: "files/",
-        UPLOAD: "files/upload/",
-        DOWNLOAD: "files/download/",
-        UPDATE: "files/update/",
-        DELETE: "files/delete/",
-        GET: "files/get/",
-        GET_ALL: "files/get-all/",
-        GET_ALL_BY_USER: "files/get-all-by-user/",
-        GET_ALL_BY_USER_AND_FILE_NAME: "files/get-all-by-user-and-file-name/",
+        BASE: "files",
+        UPLOAD: "files/upload",
+        UPLOAD_MULTIPLE: "files/upload-multiple",
+        DOWNLOAD: "files/download",
+        UPDATE: "files/update",
+        DELETE: "files/delete",
+        GET: "files/get",
+        GET_ALL: "files/get-all",
+        GET_ALL_BY_USER: "files/get-all-by-user",
+        GET_ALL_BY_USER_AND_FILE_NAME: "files/get-all-by-user-and-file-name",
     },
     SHARES: {
-        BASE: "shares/",
-        CREATE: "shares/",
-        GET: "shares/",
-        GET_BY_ID: "shares/",
-        UPDATE: "shares/",
-        DELETE: "shares/",
-        PRESIGNED_URL: "shares/",
+        BASE: "shares",
+        CREATE: "shares",
+        GET: "shares",
+        GET_BY_ID: "shares",
+        UPDATE: "shares",
+        DELETE: "shares",
+        PRESIGNED_URL: "shares",
     },
     USERS: {
-        BASE: "users/",
+        BASE: "users",
     },
 } as const;
