@@ -84,3 +84,21 @@ export const api = createApi({
 
 // Export hooks for use in components
 export const { usePrefetch } = api;
+
+// API Endpoints
+export const API_ENDPOINTS = {
+    AUTH: {
+        LOGIN: "auth/login/",
+        REGISTER: "auth/register/",
+        REFRESH: "auth/refresh/",
+        PROFILE: "profile/",
+        CHANGE_PASSWORD: "password/change/",
+        RESET_PASSWORD: "password/reset/",
+        RESET_PASSWORD_CONFIRM: "password/reset/confirm/",
+        VERIFY_EMAIL: "email/verify/",
+        RESEND_VERIFICATION: "email/resend/",
+    },
+    USERS: {
+        BASE: "users/",
+    },
+} as const;

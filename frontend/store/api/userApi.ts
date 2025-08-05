@@ -1,4 +1,4 @@
-import { api } from "../../lib/api";
+import { api, API_ENDPOINTS } from "../../lib/api";
 
 // User management types
 export interface UserListResponse {
@@ -60,7 +60,7 @@ export const userApi = api.injectEndpoints({
             { page?: number; limit?: number; search?: string }
         >({
             query: (params) => ({
-                url: "/users",
+                url: API_ENDPOINTS.USERS.BASE,
                 params: {
                     page: params.page || 1,
                     limit: params.limit || 10,

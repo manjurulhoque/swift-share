@@ -1,4 +1,4 @@
-import { api } from "../../lib/api";
+import { api, API_ENDPOINTS } from "../../lib/api";
 import type {
     AuthResponse,
     LoginRequest,
@@ -12,7 +12,7 @@ export const authApi = api.injectEndpoints({
     endpoints: (builder) => ({
         login: builder.mutation<AuthResponse, LoginRequest>({
             query: (credentials) => ({
-                url: "/auth/login",
+                url: API_ENDPOINTS.AUTH.LOGIN,
                 method: "POST",
                 body: credentials,
             }),
@@ -38,7 +38,7 @@ export const authApi = api.injectEndpoints({
 
         register: builder.mutation<AuthResponse, RegisterRequest>({
             query: (userData) => ({
-                url: "/auth/register",
+                url: API_ENDPOINTS.AUTH.REGISTER,
                 method: "POST",
                 body: userData,
             }),
@@ -61,36 +61,9 @@ export const authApi = api.injectEndpoints({
             },
             invalidatesTags: ["Auth", "User"],
         }),
-
-        logout: builder.mutation<void, void>({
-            query: () => ({
-                url: "/auth/logout",
-                method: "POST",
-            }),
-            async onQueryStarted(_, { dispatch, queryFulfilled }) {
-                try {
-                    await queryFulfilled;
-                    if (typeof window !== "undefined") {
-                        localStorage.removeItem("accessToken");
-                        localStorage.removeItem("refreshToken");
-                        window.location.href = "/login";
-                    }
-                } catch (error) {
-                    console.error("Logout failed:", error);
-                    // Clear tokens even if logout request fails
-                    if (typeof window !== "undefined") {
-                        localStorage.removeItem("accessToken");
-                        localStorage.removeItem("refreshToken");
-                        window.location.href = "/login";
-                    }
-                }
-            },
-            invalidatesTags: ["Auth", "User", "Profile"],
-        }),
-
         refreshToken: builder.mutation<AuthResponse, RefreshTokenRequest>({
             query: (refreshData) => ({
-                url: "/auth/refresh",
+                url: API_ENDPOINTS.AUTH.REFRESH,
                 method: "POST",
                 body: refreshData,
             }),
@@ -119,13 +92,13 @@ export const authApi = api.injectEndpoints({
         }),
 
         getProfile: builder.query<ProfileResponse, void>({
-            query: () => "/auth/profile",
+            query: () => API_ENDPOINTS.AUTH.PROFILE,
             providesTags: ["Profile"],
         }),
 
         updateProfile: builder.mutation<ProfileResponse, ProfileUpdateRequest>({
             query: (profileData) => ({
-                url: "/auth/profile",
+                url: API_ENDPOINTS.AUTH.PROFILE,
                 method: "PUT",
                 body: profileData,
             }),
@@ -137,7 +110,7 @@ export const authApi = api.injectEndpoints({
             { current_password: string; new_password: string }
         >({
             query: (passwordData) => ({
-                url: "/auth/change-password",
+                url: API_ENDPOINTS.AUTH.CHANGE_PASSWORD,
                 method: "POST",
                 body: passwordData,
             }),
@@ -148,7 +121,6 @@ export const authApi = api.injectEndpoints({
 export const {
     useLoginMutation,
     useRegisterMutation,
-    useLogoutMutation,
     useRefreshTokenMutation,
     useGetProfileQuery,
     useUpdateProfileMutation,
