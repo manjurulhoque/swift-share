@@ -10,12 +10,12 @@ import { ApiResponse } from "@/types/response";
 export const filesApi = api.injectEndpoints({
     endpoints: (builder) => ({
         getFiles: builder.query<ApiResponse<FilesResponse>, GetFilesParams>({
-            query: (params) => ({
+            query: ({ page, limit, search }) => ({
                 url: API_ENDPOINTS.FILES.BASE,
                 params: {
-                    page: params.page || 1,
-                    limit: params.limit || 10,
-                    search: params.search || "",
+                    page: page || 1,
+                    limit: limit || 10,
+                    search: search || "",
                 },
             }),
         }),
