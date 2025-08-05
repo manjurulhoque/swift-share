@@ -3,17 +3,19 @@ import { setupListeners } from "@reduxjs/toolkit/query";
 import { useDispatch, useSelector } from "react-redux";
 import type { TypedUseSelectorHook } from "react-redux";
 import { api } from "../lib/api";
+import { filesApi } from "./api/filesApi";
 
 export const store = configureStore({
     reducer: {
         [api.reducerPath]: api.reducer,
+        [filesApi.reducerPath]: filesApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({
             serializableCheck: {
                 ignoredActions: ["persist/PERSIST"],
             },
-        }).concat(api.middleware),
+        }).concat(api.middleware, filesApi.middleware),
     devTools: process.env.NODE_ENV !== "production",
 });
 
