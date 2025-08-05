@@ -1,11 +1,11 @@
-import NextAuth from "next-auth";
+import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { AuthResponse, LoginRequest } from "@/types/auth";
 
 const API_BASE_URL =
     process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+const authOptions: NextAuthOptions = {
     providers: [
         CredentialsProvider({
             name: "credentials",
@@ -97,4 +97,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         strategy: "jwt",
     },
     secret: process.env.NEXTAUTH_SECRET,
-});
+};
+
+const handler = NextAuth(authOptions);
+
+export { handler as GET, handler as POST };
