@@ -67,7 +67,7 @@ const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
 
 export const api = createApi({
     baseQuery: baseQueryWithReauth,
-    tagTypes: ["User", "Auth", "Profile", "Files"],
+    tagTypes: ["User", "Auth", "Profile", "Files", "Shares"],
     endpoints: () => ({}),
 });
 
@@ -97,6 +97,15 @@ export const API_ENDPOINTS = {
         GET_ALL: "files/get-all/",
         GET_ALL_BY_USER: "files/get-all-by-user/",
         GET_ALL_BY_USER_AND_FILE_NAME: "files/get-all-by-user-and-file-name/",
+    },
+    SHARES: {
+        BASE: "shares/",
+        CREATE: "shares/",
+        GET: "shares/",
+        GET_BY_ID: "shares/",
+        UPDATE: "shares/",
+        DELETE: "shares/",
+        PRESIGNED_URL: "shares/",
     },
     USERS: {
         BASE: "users/",
