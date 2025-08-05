@@ -22,13 +22,14 @@ import {
     Upload,
     Copy,
     Trash2,
+    Filter,
 } from "lucide-react";
 import { ShareLink } from "@/types/share";
 import { redirect, RedirectType } from "next/navigation";
 import { SidebarInset, SidebarTrigger } from "../ui/sidebar";
 
 export default function SharedPage() {
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
     const { toast } = useToast();
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState("");
@@ -42,7 +43,7 @@ export default function SharedPage() {
     });
 
     // Redirect if not authenticated
-    if (!isAuthenticated) {
+    if (!isAuthLoading && !isAuthenticated) {
         redirect("/login", RedirectType.replace);
     }
 
@@ -119,35 +120,6 @@ export default function SharedPage() {
         });
     };
 
-    if (isLoading) {
-        return (
-            <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-bold text-gray-900">
-                        Shared Files
-                    </h1>
-                    <div className="flex items-center space-x-2">
-                        <div className="w-64 h-10 bg-gray-200 animate-pulse rounded-md" />
-                        <div className="w-24 h-10 bg-gray-200 animate-pulse rounded-md" />
-                    </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {[...Array(6)].map((_, i) => (
-                        <Card key={i} className="animate-pulse">
-                            <CardContent className="p-6">
-                                <div className="space-y-3">
-                                    <div className="h-4 bg-gray-200 rounded w-3/4" />
-                                    <div className="h-3 bg-gray-200 rounded w-1/2" />
-                                    <div className="h-3 bg-gray-200 rounded w-1/4" />
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-            </div>
-        );
-    }
-
     if (error) {
         return (
             <div className="space-y-6">
@@ -180,8 +152,43 @@ export default function SharedPage() {
             <div className="flex-1 p-4">
                 {/* Header */}
                 <div className="max-w-7xl mx-auto space-y-6">
+                    <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                        <div className="flex-1 max-w-md">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                <Input
+                                    placeholder="Search files..."
+                                    className="pl-10"
+                                    value={searchTerm}
+                                    onChange={(e) =>
+                                        setSearchTerm(e.target.value)
+                                    }
+                                />
+                            </div>
+                        </div>
+                        <div className="flex gap-2">
+                            <Button variant="outline" size="sm">
+                                <Filter className="h-4 w-4 mr-2" />
+                                Filter
+                            </Button>
+                        </div>
+                    </div>
                     {/* Content */}
-                    {shares.length === 0 ? (
+                    {isLoading ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {[...Array(6)].map((_, i) => (
+                                <Card key={i} className="animate-pulse">
+                                    <CardContent className="p-6">
+                                        <div className="space-y-3">
+                                            <div className="h-4 bg-gray-200 rounded w-3/4" />
+                                            <div className="h-3 bg-gray-200 rounded w-1/2" />
+                                            <div className="h-3 bg-gray-200 rounded w-1/4" />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    ) : shares.length === 0 ? (
                         <Card>
                             <CardContent className="p-12 text-center">
                                 <Share2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />

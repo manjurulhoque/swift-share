@@ -46,6 +46,8 @@ import {
     useDownloadFileMutation,
 } from "@/store/api/filesApi";
 import { File } from "@/types/file";
+import { useAuth } from "@/hooks/use-auth";
+import { redirect, RedirectType } from "next/navigation";
 
 export default function FilesPage() {
     const [searchTerm, setSearchTerm] = useState("");
@@ -58,6 +60,7 @@ export default function FilesPage() {
         tags: "",
         is_public: false,
     });
+    const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
 
     // API hooks
     const {
@@ -78,6 +81,12 @@ export default function FilesPage() {
     const [deleteFile, { isLoading: isDeleting }] = useDeleteFileMutation();
     const [downloadFile, { isLoading: isDownloading }] =
         useDownloadFileMutation();
+
+    
+    // Redirect if not authenticated
+    if (!isAuthLoading && !isAuthenticated) {
+        redirect("/login", RedirectType.replace);
+    }
 
     // File upload handler
     const handleFileUpload = useCallback(

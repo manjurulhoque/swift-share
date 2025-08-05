@@ -8,7 +8,7 @@ import { LoginRequest } from "@/types/auth";
 export function useAuth() {
     const { data: session, status } = useSession();
     const router = useRouter();
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(status === "loading");
 
     const login = async (credentials: LoginRequest) => {
         setIsLoading(true);
