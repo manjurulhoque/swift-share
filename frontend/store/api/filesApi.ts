@@ -5,10 +5,11 @@ import {
     FilesResponse,
     GetFilesParams,
 } from "@/types/file";
+import { ApiResponse } from "@/types/response";
 
 export const filesApi = api.injectEndpoints({
     endpoints: (builder) => ({
-        getFiles: builder.query<FilesResponse, GetFilesParams>({
+        getFiles: builder.query<ApiResponse<FilesResponse>, GetFilesParams>({
             query: (params) => ({
                 url: API_ENDPOINTS.FILES.BASE,
                 params: {
@@ -17,16 +18,6 @@ export const filesApi = api.injectEndpoints({
                     search: params.search || "",
                 },
             }),
-            providesTags: (result) =>
-                result
-                    ? [
-                          ...result.files.map(({ id }) => ({
-                              type: "Files" as const,
-                              id,
-                          })),
-                          { type: "Files", id: "LIST" },
-                      ]
-                    : [{ type: "Files", id: "LIST" }],
         }),
 
         getFile: builder.query<File, string>({

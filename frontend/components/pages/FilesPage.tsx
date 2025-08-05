@@ -70,11 +70,14 @@ export default function FilesPage() {
         limit: 10,
         search: searchTerm,
     });
+    const files = filesData?.data?.files || [];
+    const pagination = filesData?.data?.pagination || null;
 
     const [uploadFile, { isLoading: isUploading }] = useUploadFileMutation();
     const [updateFile, { isLoading: isUpdating }] = useUpdateFileMutation();
     const [deleteFile, { isLoading: isDeleting }] = useDeleteFileMutation();
-    const [downloadFile, { isLoading: isDownloading }] = useDownloadFileMutation();
+    const [downloadFile, { isLoading: isDownloading }] =
+        useDownloadFileMutation();
 
     // File upload handler
     const handleFileUpload = useCallback(
@@ -294,7 +297,7 @@ export default function FilesPage() {
                                     </Card>
                                 ))}
                             </div>
-                        ) : filesData?.files.length === 0 ? (
+                        ) : files.length === 0 ? (
                             <Card>
                                 <CardContent className="p-12 text-center">
                                     <FileIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -324,7 +327,7 @@ export default function FilesPage() {
                             </Card>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {filesData?.files.map((file) => (
+                                {files.map((file) => (
                                     <Card
                                         key={file.id}
                                         className="hover:shadow-lg transition-shadow"
@@ -337,8 +340,13 @@ export default function FilesPage() {
                                                             file.mime_type
                                                         )}
                                                     </span>
-                                                    <div className="flex-1 min-w-0">
-                                                        <h3 className="font-medium text-gray-900 truncate">
+                                                    <div className="flex-1 min-w-0 max-w-[200px]">
+                                                        <h3
+                                                            className="font-medium text-gray-900 truncate"
+                                                            title={
+                                                                file.original_name
+                                                            }
+                                                        >
                                                             {file.original_name}
                                                         </h3>
                                                         <p className="text-sm text-gray-500">
@@ -417,11 +425,10 @@ export default function FilesPage() {
                                         </CardHeader>
                                         <CardContent className="pt-0">
                                             <div className="space-y-3">
-                                                {file.description && (
-                                                    <p className="text-sm text-gray-600 line-clamp-2">
-                                                        {file.description}
-                                                    </p>
-                                                )}
+                                                <p className="text-sm text-gray-600 line-clamp-2">
+                                                    {file.description ||
+                                                        "No description"}
+                                                </p>
                                                 <div className="flex items-center justify-between text-xs text-gray-500">
                                                     <div className="flex items-center space-x-4">
                                                         <span className="flex items-center">
@@ -437,14 +444,14 @@ export default function FilesPage() {
                                                             }
                                                         </span>
                                                     </div>
-                                                    {file.is_public && (
-                                                        <Badge
-                                                            variant="secondary"
-                                                            className="text-xs"
-                                                        >
-                                                            Public
-                                                        </Badge>
-                                                    )}
+                                                    <Badge
+                                                        variant="secondary"
+                                                        className="text-xs"
+                                                    >
+                                                        {file.is_public
+                                                            ? "Public"
+                                                            : "Private"}
+                                                    </Badge>
                                                 </div>
                                                 {file.tags && (
                                                     <div className="flex flex-wrap gap-1">
@@ -476,15 +483,15 @@ export default function FilesPage() {
                         )}
 
                         {/* Pagination */}
-                        {filesData && filesData.pagination.total_pages > 1 && (
+                        {pagination && pagination.total_pages > 1 && (
                             <div className="flex items-center justify-between">
                                 <p className="text-sm text-gray-700">
                                     Showing {(currentPage - 1) * 10 + 1} to{" "}
                                     {Math.min(
                                         currentPage * 10,
-                                        filesData.pagination.total
+                                        pagination.total
                                     )}{" "}
-                                    of {filesData.pagination.total} files
+                                    of {pagination.total} files
                                 </p>
                                 <div className="flex items-center space-x-2">
                                     <Button
@@ -499,7 +506,7 @@ export default function FilesPage() {
                                     </Button>
                                     <span className="text-sm text-gray-700">
                                         Page {currentPage} of{" "}
-                                        {filesData.pagination.total_pages}
+                                        {pagination.total_pages}
                                     </span>
                                     <Button
                                         variant="outline"
@@ -509,7 +516,7 @@ export default function FilesPage() {
                                         }
                                         disabled={
                                             currentPage ===
-                                            filesData.pagination.total_pages
+                                            pagination.total_pages
                                         }
                                     >
                                         Next
