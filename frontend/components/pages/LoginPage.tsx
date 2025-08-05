@@ -13,7 +13,7 @@ import {
     CardDescription,
 } from "@/components/ui/card";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 
 export default function LoginPage() {

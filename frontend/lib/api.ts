@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { getSession } from "next-auth/react";
 
 export const API_BASE_URL =
     process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
@@ -6,12 +7,10 @@ export const API_BASE_URL =
 // Custom base query with authentication and error handling
 const baseQuery = fetchBaseQuery({
     baseUrl: API_BASE_URL,
-    prepareHeaders: (headers, { getState }) => {
-        // Get token from localStorage or session
-        const token =
-            typeof window !== "undefined"
-                ? localStorage.getItem("accessToken")
-                : null;
+    prepareHeaders: async (headers) => {
+        // Get token from NextAuth session
+        const session = await getSession();
+        const token = session?.accessToken;
 
         if (token) {
             headers.set("authorization", `Bearer ${token}`);
@@ -28,10 +27,8 @@ const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
 
     // If we get a 401, try to refresh the token
     if (result.error && result.error.status === 401) {
-        const refreshToken =
-            typeof window !== "undefined"
-                ? localStorage.getItem("refreshToken")
-                : null;
+        const session = await getSession();
+        const refreshToken = session?.refreshToken;
 
         if (refreshToken) {
             // Try to refresh the token
@@ -46,21 +43,14 @@ const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
             );
 
             if (refreshResult.data) {
-                // Store the new tokens
-                const { access_token, refresh_token } =
-                    refreshResult.data as any;
-                if (typeof window !== "undefined") {
-                    localStorage.setItem("accessToken", access_token);
-                    localStorage.setItem("refreshToken", refresh_token);
-                }
+                // Note: NextAuth will handle token refresh automatically
+                // We don't need to manually store tokens here
 
                 // Retry the original request
                 result = await baseQuery(args, api, extraOptions);
             } else {
-                // Refresh failed, clear tokens and redirect to login
+                // Refresh failed, redirect to login
                 if (typeof window !== "undefined") {
-                    localStorage.removeItem("accessToken");
-                    localStorage.removeItem("refreshToken");
                     window.location.href = "/login";
                 }
             }
@@ -76,9 +66,8 @@ const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
 };
 
 export const api = createApi({
-    reducerPath: "api",
     baseQuery: baseQueryWithReauth,
-    tagTypes: ["User", "Auth", "Profile"],
+    tagTypes: ["User", "Auth", "Profile", "Files"],
     endpoints: () => ({}),
 });
 
@@ -97,6 +86,17 @@ export const API_ENDPOINTS = {
         RESET_PASSWORD_CONFIRM: "password/reset/confirm/",
         VERIFY_EMAIL: "email/verify/",
         RESEND_VERIFICATION: "email/resend/",
+    },
+    FILES: {
+        BASE: "files/",
+        UPLOAD: "files/upload/",
+        DOWNLOAD: "files/download/",
+        UPDATE: "files/update/",
+        DELETE: "files/delete/",
+        GET: "files/get/",
+        GET_ALL: "files/get-all/",
+        GET_ALL_BY_USER: "files/get-all-by-user/",
+        GET_ALL_BY_USER_AND_FILE_NAME: "files/get-all-by-user-and-file-name/",
     },
     USERS: {
         BASE: "users/",

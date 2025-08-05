@@ -1,76 +1,16 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { api, API_ENDPOINTS } from "@/lib/api";
+import {
+    File,
+    FileUpdateRequest,
+    FilesResponse,
+    GetFilesParams,
+} from "@/types/file";
 
-export interface File {
-    id: string;
-    file_name: string;
-    original_name: string;
-    file_size: number;
-    mime_type: string;
-    file_extension: string;
-    is_public: boolean;
-    download_count: number;
-    description: string;
-    tags: string;
-    created_at: string;
-    updated_at: string;
-    user?: {
-        id: string;
-        first_name: string;
-        last_name: string;
-        email: string;
-    };
-}
-
-export interface FileUploadRequest {
-    description?: string;
-    tags?: string;
-    is_public?: boolean;
-}
-
-export interface FileUpdateRequest {
-    description?: string;
-    tags?: string;
-    is_public?: boolean;
-}
-
-export interface FilesResponse {
-    files: File[];
-    pagination: {
-        page: number;
-        limit: number;
-        total: number;
-        total_pages: number;
-    };
-}
-
-export interface GetFilesParams {
-    page?: number;
-    limit?: number;
-    search?: string;
-}
-
-export const filesApi = createApi({
-    reducerPath: "filesApi",
-    baseQuery: fetchBaseQuery({
-        baseUrl:
-            process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1",
-        prepareHeaders: (headers, { getState }) => {
-            const token =
-                typeof window !== "undefined"
-                    ? localStorage.getItem("accessToken")
-                    : null;
-
-            if (token) {
-                headers.set("authorization", `Bearer ${token}`);
-            }
-            return headers;
-        },
-    }),
-    tagTypes: ["Files"],
+export const filesApi = api.injectEndpoints({
     endpoints: (builder) => ({
         getFiles: builder.query<FilesResponse, GetFilesParams>({
             query: (params) => ({
-                url: "/files",
+                url: API_ENDPOINTS.FILES.BASE,
                 params: {
                     page: params.page || 1,
                     limit: params.limit || 10,
@@ -90,20 +30,19 @@ export const filesApi = createApi({
         }),
 
         getFile: builder.query<File, string>({
-            query: (id) => `/files/${id}`,
+            query: (id) => API_ENDPOINTS.FILES.GET + id,
             providesTags: (result, error, id) => [{ type: "Files", id }],
         }),
 
         uploadFile: builder.mutation<File, FormData>({
             query: (formData) => ({
-                url: "/files/upload",
+                url: API_ENDPOINTS.FILES.UPLOAD,
                 method: "POST",
                 body: formData,
                 headers: {
                     // Don't set Content-Type for FormData, let the browser set it
                 },
             }),
-            invalidatesTags: [{ type: "Files", id: "LIST" }],
         }),
 
         updateFile: builder.mutation<
@@ -115,10 +54,7 @@ export const filesApi = createApi({
                 method: "PUT",
                 body: data,
             }),
-            invalidatesTags: (result, error, { id }) => [
-                { type: "Files", id },
-                { type: "Files", id: "LIST" },
-            ],
+            invalidatesTags: (result, error, { id }) => [{ type: "Files", id }],
         }),
 
         deleteFile: builder.mutation<void, string>({
@@ -126,7 +62,7 @@ export const filesApi = createApi({
                 url: `/files/${id}`,
                 method: "DELETE",
             }),
-            invalidatesTags: [{ type: "Files", id: "LIST" }],
+            invalidatesTags: (result, error, id) => [{ type: "Files", id }],
         }),
 
         downloadFile: builder.mutation<{ download_url: string }, string>({
@@ -134,6 +70,7 @@ export const filesApi = createApi({
                 url: `/files/${id}/download`,
                 method: "GET",
             }),
+            invalidatesTags: (result, error, id) => [{ type: "Files", id }],
         }),
     }),
 });

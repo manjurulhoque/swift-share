@@ -44,8 +44,8 @@ import {
     useUpdateFileMutation,
     useDeleteFileMutation,
     useDownloadFileMutation,
-    type File,
 } from "@/store/api/filesApi";
+import { File } from "@/types/file";
 
 export default function FilesPage() {
     const [searchTerm, setSearchTerm] = useState("");
@@ -74,8 +74,7 @@ export default function FilesPage() {
     const [uploadFile, { isLoading: isUploading }] = useUploadFileMutation();
     const [updateFile, { isLoading: isUpdating }] = useUpdateFileMutation();
     const [deleteFile, { isLoading: isDeleting }] = useDeleteFileMutation();
-    const [downloadFile, { isLoading: isDownloading }] =
-        useDownloadFileMutation();
+    const [downloadFile, { isLoading: isDownloading }] = useDownloadFileMutation();
 
     // File upload handler
     const handleFileUpload = useCallback(
