@@ -26,45 +26,15 @@ const baseQuery = fetchBaseQuery({
     },
 });
 
-// Enhanced base query with retry logic and error handling
+// Enhanced base query with error handling
 const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
     let result = await baseQuery(args, api, extraOptions);
 
-    // If we get a 401, try to refresh the token
+    // If we get a 401, redirect to login (NextAuth will handle token refresh automatically)
     if (result.error && result.error.status === 401) {
-        const session = await getSession();
-        const refreshToken = session?.refreshToken;
-
-        if (refreshToken) {
-            // Try to refresh the token
-            const refreshResult = await baseQuery(
-                {
-                    url: "/auth/refresh",
-                    method: "POST",
-                    body: { refresh_token: refreshToken },
-                },
-                api,
-                extraOptions
-            );
-
-            if (refreshResult.data) {
-                // Note: NextAuth will handle token refresh automatically
-                // We don't need to manually store tokens here
-
-                // Retry the original request
-                result = await baseQuery(args, api, extraOptions);
-            } else {
-                // Refresh failed, redirect to login
-                if (typeof window !== "undefined") {
-                    window.location.href = "/login";
-                }
-            }
-        } else {
-            // No refresh token, redirect to login
-            if (typeof window !== "undefined") {
-                window.location.href = "/login";
-            }
-        }
+        // if (typeof window !== "undefined") {
+        //     window.location.href = "/login";
+        // }
     }
 
     return result;

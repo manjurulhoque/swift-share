@@ -127,7 +127,7 @@ func OptionalAuthMiddleware() gin.HandlerFunc {
 
 // GenerateToken generates a JWT access token for a user
 func GenerateToken(user models.User) (string, error) {
-	expirationTime := time.Now().Add(24 * time.Hour) // Default 24 hours
+	expirationTime := time.Now().Add(5 * time.Minute) // Default 24 hours
 
 	// Parse custom expiration time if configured
 	if config.AppConfig.JWT.ExpiresIn != "" {

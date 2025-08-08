@@ -2,42 +2,45 @@ import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { AuthResponse, LoginRequest } from "@/types/auth";
 import { JWT } from "next-auth/jwt";
-
-const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
-
+import { API_ENDPOINTS, API_BASE_URL } from "@/lib/api";
+import { jwtDecode } from "jwt-decode";
+import { ApiResponse } from "@/types/response";
 
 async function refreshAccessToken(token: JWT) {
     try {
         const response = await fetch(
-            `${API_BASE_URL}/auth/refresh`,
+            `${API_BASE_URL}/${API_ENDPOINTS.AUTH.REFRESH}`,
             {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    refresh: token.refreshToken,
+                    refresh_token: token.refreshToken,
                 }),
             }
         );
 
-        const refreshedTokens = await response.json();
+        const refreshedTokens = (await response.json()) as ApiResponse<{
+            tokens: {
+                access_token: string;
+                refresh_token: string;
+            };
+        }>;
+        console.log("refreshedTokens", refreshedTokens);
 
         if (!response.ok) {
             throw refreshedTokens;
         }
 
         return {
-            ...token,
-            accessToken: refreshedTokens.access,
-            refreshToken: refreshedTokens.refresh ?? token.refreshToken,
-            accessTokenExpires: Date.now() + 60 * 60 * 1000, // 60 minutes to match backend
+            accessToken: refreshedTokens.data?.tokens.access_token ?? "",
+            refreshToken: refreshedTokens.data?.tokens.refresh_token ?? "",
+            accessTokenExpires: Date.now() + 60 * 60 * 1000 * 24, // 1 day to match backend
             error: undefined,
         };
     } catch (error) {
         return {
-            ...token,
             error: "RefreshAccessTokenError",
         };
     }
@@ -57,16 +60,19 @@ const authOptions: NextAuthOptions = {
                 }
 
                 try {
-                    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                            email: credentials.email,
-                            password: credentials.password,
-                        } as LoginRequest),
-                    });
+                    const response = await fetch(
+                        `${API_BASE_URL}/${API_ENDPOINTS.AUTH.LOGIN}`,
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({
+                                email: credentials.email,
+                                password: credentials.password,
+                            } as LoginRequest),
+                        }
+                    );
 
                     if (!response.ok) {
                         return null;
@@ -108,36 +114,21 @@ const authOptions: NextAuthOptions = {
                 token.lastName = user.lastName;
             }
 
-            // // Handle token refresh
-            // if (trigger === "update" && session?.accessToken) {
-            //     token.accessToken = session.accessToken;
-            //     token.refreshToken = session.refreshToken;
-            // }
-
-            // // Check if token is expired and refresh if needed
-            // if (token.accessToken && token.refreshToken) {
-            //     try {
-            //         const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-            //             method: "POST",
-            //             headers: {
-            //                 "Content-Type": "application/json",
-            //             },
-            //             body: JSON.stringify({
-            //                 refresh_token: token.refreshToken,
-            //             }),
-            //         });
-
-            //         if (response.ok) {
-            //             const data = await response.json();
-            //             if (data.success) {
-            //                 token.accessToken = data.data.access_token;
-            //                 token.refreshToken = data.data.refresh_token;
-            //             }
-            //         }
-            //     } catch (error) {
-            //         console.error("Token refresh error:", error);
-            //     }
-            // }
+            if (token.accessToken) {
+                const { exp } = jwtDecode(token.accessToken as string);
+                if (exp && exp < Date.now() / 1000) {
+                    let refreshedTokens = await refreshAccessToken(token);
+                    if (refreshedTokens.error) {
+                        return {
+                            ...token,
+                            error: refreshedTokens.error,
+                        };
+                    }
+                    token.accessToken = refreshedTokens.accessToken as string;
+                    token.refreshToken = refreshedTokens.refreshToken as string;
+                    token.accessTokenExpires = refreshedTokens.accessTokenExpires as number;
+                }
+            }
 
             return token;
         },

@@ -316,9 +316,17 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 		return
 	}
 
+	// Generate new refresh token
+	refreshToken, err := middleware.GenerateRefreshToken(user)
+	if err != nil {
+		utils.InternalServerErrorResponse(c, "Failed to generate refresh token")
+		return
+	}
+
 	response := gin.H{
 		"tokens": gin.H{
 			"access_token": accessToken,
+			"refresh_token": refreshToken,
 		},
 	}
 
