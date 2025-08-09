@@ -7,6 +7,9 @@ import {
     Share,
     Trash,
     Edit,
+    Eye,
+    LockOpen,
+    Lock,
     Calendar,
     MoreHorizontal,
 } from "lucide-react";
@@ -24,6 +27,8 @@ interface FileCardProps {
     file: File;
     onDownload: (fileId: string, fileName: string) => void;
     onShare: (fileId: string) => void;
+    onPreview: (file: File) => void;
+    onTogglePublic: (file: File) => void;
     onEdit: (file: File) => void;
     onDelete: (file: File) => void;
     isDownloading?: boolean;
@@ -33,6 +38,8 @@ export function FileCard({
     file,
     onDownload,
     onShare,
+    onPreview,
+    onTogglePublic,
     onEdit,
     onDelete,
     isDownloading = false,
@@ -100,6 +107,10 @@ export function FileCard({
                         <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => onPreview(file)}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                Preview
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                                 onClick={() =>
                                     onDownload(file.id, file.original_name)
@@ -112,6 +123,18 @@ export function FileCard({
                             <DropdownMenuItem onClick={() => onShare(file.id)}>
                                 <Share className="h-4 w-4 mr-2" />
                                 Share
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onClick={() => onTogglePublic(file)}
+                            >
+                                {file.is_public ? (
+                                    <Lock className="h-4 w-4 mr-2" />
+                                ) : (
+                                    <LockOpen className="h-4 w-4 mr-2" />
+                                )}
+                                {file.is_public
+                                    ? "Make Private"
+                                    : "Make Public"}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => onEdit(file)}>
                                 <Edit className="h-4 w-4 mr-2" />

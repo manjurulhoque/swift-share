@@ -76,12 +76,16 @@ export const filesApi = api.injectEndpoints({
             invalidatesTags: (result, error, id) => [{ type: "Files", id }],
         }),
 
-        downloadFile: builder.mutation<{ download_url: string }, string>({
-            query: (id) => ({
-                url: `/files/${id}/download`,
-                method: "GET",
+        getPresignedDownloadUrl: builder.mutation<
+            { download_url: string; expires_in_minutes: number },
+            { id: string; expiration?: number }
+        >({
+            query: ({ id, expiration }) => ({
+                url: `/files/${id}/presigned-url${
+                    expiration ? `?expiration=${expiration}` : ""
+                }`,
+                method: "POST",
             }),
-            invalidatesTags: (result, error, id) => [{ type: "Files", id }],
         }),
     }),
 });
@@ -93,5 +97,5 @@ export const {
     useUploadMultipleFilesMutation,
     useUpdateFileMutation,
     useDeleteFileMutation,
-    useDownloadFileMutation,
+    useGetPresignedDownloadUrlMutation,
 } = filesApi;

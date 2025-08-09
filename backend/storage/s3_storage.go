@@ -60,6 +60,20 @@ func (s *s3Storage) UploadFile(ctx context.Context, key string, data []byte, con
 	return url, nil
 }
 
+// SetObjectPublic updates the object's ACL to public-read or private based on isPublic
+func (s *s3Storage) SetObjectPublic(ctx context.Context, key string, isPublic bool) error {
+	acl := s3types.ObjectCannedACLPrivate
+	if isPublic {
+		acl = s3types.ObjectCannedACLPublicRead
+	}
+	_, err := s.client.PutObjectAcl(ctx, &s3.PutObjectAclInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(key),
+		ACL:    acl,
+	})
+	return err
+}
+
 func (s *s3Storage) DeleteFile(ctx context.Context, key string) error {
 	_, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket: aws.String(s.bucket),

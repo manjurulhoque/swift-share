@@ -57,3 +57,8 @@ func (l *localStorage) FileExists(ctx context.Context, key string) (bool, error)
 	}
 	return true, nil
 }
+
+// SetObjectPublic is a no-op for local storage
+func (l *localStorage) SetObjectPublic(ctx context.Context, key string, isPublic bool) error {
+	return nil
+}

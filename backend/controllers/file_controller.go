@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/manjurulhoque/swift-share/backend/config"
 	"github.com/manjurulhoque/swift-share/backend/storage"
@@ -100,6 +101,12 @@ func (fc *FileController) UploadFile(c *gin.Context) {
 	if err != nil {
 		utils.InternalServerErrorResponse(c, "Failed to upload file to storage")
 		return
+	}
+
+	// Update ACL based on visibility
+	if err := storageSvc.SetObjectPublic(c.Request.Context(), objectKey, isPublic); err != nil {
+		// Best-effort: log but don't fail the request, we can still store as private
+		appLogger.Error("Failed to set object ACL", "key", objectKey, "error", err)
 	}
 
 	fileModel := models.File{
@@ -258,6 +265,11 @@ func (fc *FileController) UploadMultipleFiles(c *gin.Context) {
 				storageSvc.DeleteFile(c.Request.Context(), objectKey)
 				results <- uploadResult{Error: err, Filename: header.Filename}
 				return
+			}
+
+			// Update ACL based on visibility
+			if err := storageSvc.SetObjectPublic(c.Request.Context(), objectKey, isPublic); err != nil {
+				appLogger.Error("Failed to set object ACL", "key", objectKey, "error", err)
 			}
 
 			// Log audit event
@@ -484,10 +496,74 @@ func (fc *FileController) UpdateFile(c *gin.Context) {
 		return
 	}
 
+	// Update ACL on storage to reflect new public/private status
+	objectKey := filepath.Join(user.ID.String(), file.FileName)
+	storageSvc := storage.GetStorage()
+	if err := storageSvc.SetObjectPublic(c.Request.Context(), objectKey, file.IsPublic); err != nil {
+		appLogger.Error("Failed to update object ACL on update", "key", objectKey, "error", err)
+	}
+
 	fc.auditService.LogEvent(&user.ID, models.ActionFileUpdate, models.ResourceFile, &file.ID,
 		fmt.Sprintf("File updated: %s", file.OriginalName), c.ClientIP(), c.GetHeader("User-Agent"), models.StatusSuccess)
 
 	utils.SuccessResponse(c, http.StatusOK, "File updated successfully", file.ToResponse())
+}
+
+// GeneratePresignedURL godoc
+// @Summary Generate a pre-signed download URL for a file
+// @Description Returns a time-limited pre-signed URL to download the file
+// @Tags files
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "File ID"
+// @Param expiration query int false "Expiration in minutes (default 15)"
+// @Success 200 {object} utils.APIResponse "Presigned URL generated"
+// @Failure 400 {object} utils.APIResponse "Invalid file ID"
+// @Failure 401 {object} utils.APIResponse "Unauthorized"
+// @Failure 404 {object} utils.APIResponse "File not found"
+// @Router /files/{id}/presigned-url [post]
+func (fc *FileController) GeneratePresignedURL(c *gin.Context) {
+	user, exists := middleware.GetUserFromContext(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not found in context")
+		return
+	}
+
+	fileID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid file ID")
+		return
+	}
+
+	var file models.File
+	if err := database.GetDB().Where("id = ? AND user_id = ?", fileID, user.ID).First(&file).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusNotFound, "File not found")
+		return
+	}
+
+	// Default expiration 15 minutes
+	expMinutes, _ := strconv.Atoi(c.DefaultQuery("expiration", "15"))
+	if expMinutes <= 0 || expMinutes > 1440 {
+		expMinutes = 15
+	}
+
+	storageSvc := storage.GetStorage()
+	objectKey := filepath.Join(user.ID.String(), file.FileName)
+
+	url, err := storageSvc.GeneratePresignedURL(c.Request.Context(), objectKey, time.Duration(expMinutes)*time.Minute)
+	if err != nil {
+		utils.InternalServerErrorResponse(c, "Failed to generate presigned URL")
+		return
+	}
+
+	fc.auditService.LogEvent(&user.ID, models.ActionFileDownload, models.ResourceFile, &file.ID,
+		fmt.Sprintf("Generated presigned URL for: %s", file.OriginalName), c.ClientIP(), c.GetHeader("User-Agent"), models.StatusSuccess)
+
+	utils.SuccessResponse(c, http.StatusOK, "Presigned URL generated", gin.H{
+		"download_url":       url,
+		"expires_in_minutes": expMinutes,
+	})
 }
 
 // DeleteFile godoc

@@ -18,6 +18,8 @@ type StorageService interface {
 	GeneratePresignedURL(ctx context.Context, key string, expiration time.Duration) (url string, err error)
 	// FileExists checks if a file exists in storage
 	FileExists(ctx context.Context, key string) (bool, error)
+	// SetObjectPublic updates the ACL/visibility of the object (true => public-read, false => private)
+	SetObjectPublic(ctx context.Context, key string, isPublic bool) error
 }
 
 var defaultStorage StorageService

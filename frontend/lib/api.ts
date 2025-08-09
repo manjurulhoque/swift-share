@@ -66,7 +66,7 @@ export const API_ENDPOINTS = {
         BASE: "files/",
         UPLOAD: "files/upload/",
         DOWNLOAD: "files/download/",
-        UPLOAD_MULTIPLE: "files/upload-multiple/",
+        UPLOAD_MULTIPLE: "files/upload-multiple",
         UPDATE: "files/update/",
         DELETE: "files/delete/",
         GET: "files/get/",

@@ -47,6 +47,7 @@ func SetupRoutes(router *gin.Engine) {
 				files.PUT("/:id", fileController.UpdateFile)
 				files.DELETE("/:id", fileController.DeleteFile)
 				files.GET("/:id/download", fileController.DownloadFile)
+				files.POST("/:id/presigned-url", fileController.GeneratePresignedURL)
 			}
 
 			// Share links routes

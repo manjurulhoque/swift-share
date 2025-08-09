@@ -23,7 +23,7 @@ import {
     useUploadFileMutation,
     useUpdateFileMutation,
     useDeleteFileMutation,
-    useDownloadFileMutation,
+    useGetPresignedDownloadUrlMutation,
 } from "@/store/api/filesApi";
 import { File } from "@/types/file";
 import { useAuth } from "@/hooks/use-auth";
@@ -60,8 +60,8 @@ export default function FilesPage() {
     const [uploadFile, { isLoading: isUploading }] = useUploadFileMutation();
     const [updateFile, { isLoading: isUpdating }] = useUpdateFileMutation();
     const [deleteFile, { isLoading: isDeleting }] = useDeleteFileMutation();
-    const [downloadFile, { isLoading: isDownloading }] =
-        useDownloadFileMutation();
+    const [getPresignedUrl, { isLoading: isGenerating }] =
+        useGetPresignedDownloadUrlMutation();
 
     // Redirect if not authenticated
     if (!isAuthLoading && !isAuthenticated) {
@@ -96,7 +96,7 @@ export default function FilesPage() {
     // File actions
     const handleDownload = async (fileId: string, fileName: string) => {
         try {
-            const result = await downloadFile(fileId).unwrap();
+            const result = await getPresignedUrl({ id: fileId }).unwrap();
             // Create a temporary link to download the file
             const link = document.createElement("a");
             link.href = result.download_url;
@@ -119,6 +119,44 @@ export default function FilesPage() {
             is_public: file.is_public,
         });
         setIsEditDialogOpen(true);
+    };
+
+    const handleTogglePublic = async (file: File) => {
+        try {
+            await updateFile({
+                id: file.id,
+                data: { is_public: !file.is_public },
+            }).unwrap();
+            toast.success(
+                `File is now ${!file.is_public ? "public" : "private"}`
+            );
+        } catch (error) {
+            toast.error("Failed to update visibility");
+        }
+    };
+
+    const handlePreview = async (file: File) => {
+        // For now, for images and PDFs use presigned URL; otherwise trigger download
+        try {
+            const { download_url } = await getPresignedUrl({
+                id: file.id,
+            }).unwrap();
+            if (
+                file.mime_type.startsWith("image/") ||
+                file.mime_type.includes("pdf")
+            ) {
+                window.open(download_url, "_blank");
+            } else {
+                const link = document.createElement("a");
+                link.href = download_url;
+                link.download = file.original_name;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        } catch (error) {
+            toast.error("Failed to open preview");
+        }
     };
 
     const handleUpdateFile = async () => {
@@ -152,12 +190,13 @@ export default function FilesPage() {
 
     const handleShare = async (fileId: string) => {
         try {
-            // This would typically create a share link
-            const shareUrl = `${window.location.origin}/share/${fileId}`;
-            await navigator.clipboard.writeText(shareUrl);
-            toast.success("Share link copied to clipboard!");
+            const { download_url } = await getPresignedUrl({
+                id: fileId,
+            }).unwrap();
+            await navigator.clipboard.writeText(download_url);
+            toast.success("Download link copied to clipboard!");
         } catch (error) {
-            toast.error("Failed to copy share link");
+            toast.error("Failed to copy link");
         }
     };
 
@@ -288,12 +327,14 @@ export default function FilesPage() {
                                         file={file}
                                         onDownload={handleDownload}
                                         onShare={handleShare}
+                                        onPreview={handlePreview}
+                                        onTogglePublic={handleTogglePublic}
                                         onEdit={handleEdit}
                                         onDelete={() => {
                                             setSelectedFile(file);
                                             setIsDeleteDialogOpen(true);
                                         }}
-                                        isDownloading={isDownloading}
+                                        isDownloading={isGenerating}
                                     />
                                 ))}
                             </div>
