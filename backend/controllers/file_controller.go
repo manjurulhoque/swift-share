@@ -38,6 +38,167 @@ func NewFileController() *FileController {
 	}
 }
 
+// GetCollaborators returns all collaborators for a file
+func (fc *FileController) GetCollaborators(c *gin.Context) {
+	user, exists := middleware.GetUserFromContext(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not found in context")
+		return
+	}
+
+	fileID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid file ID")
+		return
+	}
+
+
+	var file models.File
+	if err := database.GetDB().Where("id = ? AND user_id = ?", fileID, user.ID).First(&file).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusForbidden, "Only the owner can get collaborators")
+		return
+	}
+
+	var collaborators []models.FilePermission
+	if err := database.GetDB().Where("file_id = ?", fileID).Find(&collaborators).Error; err != nil {
+		utils.InternalServerErrorResponse(c, "Failed to get collaborators")
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, "Collaborators fetched successfully", collaborators)
+}
+
+// AddCollaborator adds a collaborator to a file with a specific role
+func (fc *FileController) AddCollaborator(c *gin.Context) {
+	user, exists := middleware.GetUserFromContext(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not found in context")
+		return
+	}
+
+	fileID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid file ID")
+		return
+	}
+
+	// Ensure requester is owner
+	var file models.File
+	if err := database.GetDB().Where("id = ? AND user_id = ?", fileID, user.ID).First(&file).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusForbidden, "Only the owner can add collaborators")
+		return
+	}
+
+	var req models.AddCollaboratorRequest
+	if !utils.BindAndValidate(c, &req) {
+		return
+	}
+
+	collab := models.FilePermission{
+		FileID:    file.ID,
+		UserID:    req.UserID,
+		Role:      req.Role,
+		ExpiresAt: req.ExpiresAt,
+	}
+
+	if err := database.GetDB().Where("file_id = ? AND user_id = ?", file.ID, req.UserID).Assign(collab).FirstOrCreate(&collab).Error; err != nil {
+		utils.InternalServerErrorResponse(c, "Failed to add collaborator")
+		return
+	}
+
+	// Load user for response
+	database.GetDB().Preload("User").First(&collab, collab.ID)
+
+	utils.SuccessResponse(c, http.StatusCreated, "Collaborator added", collab.ToResponse())
+}
+
+// UpdateCollaborator updates role or expiration for a collaborator
+func (fc *FileController) UpdateCollaborator(c *gin.Context) {
+	user, exists := middleware.GetUserFromContext(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not found in context")
+		return
+	}
+
+	fileID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid file ID")
+		return
+	}
+
+	// Ensure requester is owner
+	var file models.File
+	if err := database.GetDB().Where("id = ? AND user_id = ?", fileID, user.ID).First(&file).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusForbidden, "Only the owner can update collaborators")
+		return
+	}
+
+	collaboratorID, err := uuid.Parse(c.Param("collaboratorId"))
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid collaborator ID")
+		return
+	}
+
+	var req models.UpdateCollaboratorRequest
+	if !utils.BindAndValidate(c, &req) {
+		return
+	}
+
+	var collab models.FilePermission
+	if err := database.GetDB().Where("file_id = ? AND user_id = ?", file.ID, collaboratorID).First(&collab).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusNotFound, "Collaborator not found")
+		return
+	}
+
+	if req.Role != "" {
+		collab.Role = req.Role
+	}
+	collab.ExpiresAt = req.ExpiresAt
+
+	if err := database.GetDB().Save(&collab).Error; err != nil {
+		utils.InternalServerErrorResponse(c, "Failed to update collaborator")
+		return
+	}
+
+	database.GetDB().Preload("User").First(&collab, collab.ID)
+	utils.SuccessResponse(c, http.StatusOK, "Collaborator updated", collab.ToResponse())
+}
+
+// RemoveCollaborator removes a collaborator from a file
+func (fc *FileController) RemoveCollaborator(c *gin.Context) {
+	user, exists := middleware.GetUserFromContext(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not found in context")
+		return
+	}
+
+	fileID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid file ID")
+		return
+	}
+
+	// Ensure requester is owner
+	var file models.File
+	if err := database.GetDB().Where("id = ? AND user_id = ?", fileID, user.ID).First(&file).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusForbidden, "Only the owner can remove collaborators")
+		return
+	}
+
+	collaboratorID, err := uuid.Parse(c.Param("collaboratorId"))
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid collaborator ID")
+		return
+	}
+
+	if err := database.GetDB().Where("file_id = ? AND user_id = ?", file.ID, collaboratorID).Delete(&models.FilePermission{}).Error; err != nil {
+		utils.InternalServerErrorResponse(c, "Failed to remove collaborator")
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, "Collaborator removed", nil)
+}
+
 // UploadFile godoc
 // @Summary Upload a file
 // @Description Upload a file to the system
@@ -380,18 +541,26 @@ func (fc *FileController) GetFiles(c *gin.Context) {
 		limit = 10
 	}
 
-	query := database.GetDB().Where("user_id = ?", user.ID)
+	// Owner files or collaborator files
+	query := database.GetDB().Model(&models.File{}).
+		Joins("LEFT JOIN file_permissions ON files.id = file_permissions.file_id").
+		Where("files.user_id = ? OR file_permissions.user_id = ?", user.ID, user.ID)
 
 	if search != "" {
 		query = query.Where("original_name LIKE ? OR description LIKE ?", "%"+search+"%", "%"+search+"%")
 	}
 
 	var total int64
-	query.Model(&models.File{}).Count(&total)
+	// Use subquery to count distinct files
+	database.GetDB().Model(&models.File{}).
+		Joins("LEFT JOIN file_permissions ON files.id = file_permissions.file_id").
+		Where("files.user_id = ? OR file_permissions.user_id = ?", user.ID, user.ID).
+		Distinct("files.id").
+		Count(&total)
 
 	var files []models.File
 	offset := (page - 1) * limit
-	if err := query.Preload("User").Offset(offset).Limit(limit).Order("created_at DESC").Find(&files).Error; err != nil {
+	if err := query.Select("files.*").Distinct("files.id").Preload("User").Offset(offset).Limit(limit).Order("files.created_at DESC").Find(&files).Error; err != nil {
 		utils.InternalServerErrorResponse(c, "Failed to retrieve files")
 		return
 	}
@@ -441,9 +610,17 @@ func (fc *FileController) GetFile(c *gin.Context) {
 	}
 
 	var file models.File
-	if err := database.GetDB().Preload("User").Where("id = ? AND user_id = ?", fileID, user.ID).First(&file).Error; err != nil {
+	if err := database.GetDB().Preload("User").Where("id = ?", fileID).First(&file).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusNotFound, "File not found")
 		return
+	}
+	if file.UserID != user.ID {
+		var perm models.FilePermission
+		err := database.GetDB().Where("file_id = ? AND user_id = ?", file.ID, user.ID).First(&perm).Error
+		if err != nil || perm.IsExpired() {
+			utils.ErrorResponse(c, http.StatusForbidden, "You do not have access to this file")
+			return
+		}
 	}
 
 	utils.SuccessResponse(c, http.StatusOK, "File retrieved successfully", file.ToResponse())
@@ -483,7 +660,7 @@ func (fc *FileController) UpdateFile(c *gin.Context) {
 
 	var file models.File
 	if err := database.GetDB().Preload("User").Where("id = ? AND user_id = ?", fileID, user.ID).First(&file).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusNotFound, "File not found")
+		utils.ErrorResponse(c, http.StatusNotFound, "File not found or you are not the owner")
 		return
 	}
 
@@ -537,9 +714,19 @@ func (fc *FileController) GeneratePresignedURL(c *gin.Context) {
 	}
 
 	var file models.File
-	if err := database.GetDB().Where("id = ? AND user_id = ?", fileID, user.ID).First(&file).Error; err != nil {
+	// Allow if requester is owner OR has a non-expired collaborator permission
+	if err := database.GetDB().Where("id = ?", fileID).First(&file).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusNotFound, "File not found")
 		return
+	}
+	if file.UserID != user.ID {
+		// not owner, check collaborator permission
+		var perm models.FilePermission
+		err := database.GetDB().Where("file_id = ? AND user_id = ?", file.ID, user.ID).First(&perm).Error
+		if err != nil || perm.IsExpired() {
+			utils.ErrorResponse(c, http.StatusForbidden, "You do not have access to this file")
+			return
+		}
 	}
 
 	// Default expiration 15 minutes
@@ -640,9 +827,17 @@ func (fc *FileController) DownloadFile(c *gin.Context) {
 	}
 
 	var file models.File
-	if err := database.GetDB().Where("id = ? AND user_id = ?", fileID, user.ID).First(&file).Error; err != nil {
+	if err := database.GetDB().Where("id = ?", fileID).First(&file).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusNotFound, "File not found")
 		return
+	}
+	if file.UserID != user.ID {
+		var perm models.FilePermission
+		err := database.GetDB().Where("file_id = ? AND user_id = ?", file.ID, user.ID).First(&perm).Error
+		if err != nil || perm.IsExpired() {
+			utils.ErrorResponse(c, http.StatusForbidden, "You do not have access to this file")
+			return
+		}
 	}
 
 	// Increment download count

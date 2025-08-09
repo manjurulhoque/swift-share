@@ -75,7 +75,7 @@ func Migrate() {
 	err := db.AutoMigrate(
 		&models.User{},
 		&models.File{},
-		&models.ShareLink{},
+		&models.FilePermission{},
 		&models.Download{},
 		&models.Upload{},
 		&models.AuditLog{},

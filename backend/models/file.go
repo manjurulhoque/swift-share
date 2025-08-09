@@ -25,9 +25,9 @@ type File struct {
 	DeletedAt     gorm.DeletedAt `json:"-" gorm:"index"`
 
 	// Relationships
-	User       User        `json:"user,omitempty" gorm:"foreignKey:UserID"`
-	ShareLinks []ShareLink `json:"share_links,omitempty" gorm:"foreignKey:FileID"`
-	Downloads  []Download  `json:"downloads,omitempty" gorm:"foreignKey:FileID"`
+	User        User             `json:"user,omitempty" gorm:"foreignKey:UserID"`
+	Permissions []FilePermission `json:"permissions,omitempty" gorm:"foreignKey:FileID"`
+	Downloads   []Download       `json:"downloads,omitempty" gorm:"foreignKey:FileID"`
 }
 
 type FileUploadRequest struct {

@@ -10,9 +10,7 @@ func SetupRoutes(router *gin.Engine) {
 	// Initialize controllers
 	authController := controllers.NewAuthController()
 	fileController := controllers.NewFileController()
-	shareController := controllers.NewShareController()
 	adminController := controllers.NewAdminController()
-	publicController := controllers.NewPublicController()
 
 	// API v1 routes
 	v1 := router.Group("/api/v1")
@@ -44,22 +42,19 @@ func SetupRoutes(router *gin.Engine) {
 				files.POST("/upload", fileController.UploadFile)
 				files.POST("/upload-multiple", fileController.UploadMultipleFiles)
 				files.GET("/:id", fileController.GetFile)
-				files.PUT("/:id", fileController.UpdateFile)
-				files.DELETE("/:id", fileController.DeleteFile)
+				// Owner-only operations
+				files.PUT("/:id", middleware.FileOwnerMiddleware(), fileController.UpdateFile)
+				files.DELETE("/:id", middleware.FileOwnerMiddleware(), fileController.DeleteFile)
+				// Download/presign allow collaborators; keep standard auth only
 				files.GET("/:id/download", fileController.DownloadFile)
 				files.POST("/:id/presigned-url", fileController.GeneratePresignedURL)
+				// Collaborators
+				files.GET("/:id/collaborators", middleware.FileOwnerMiddleware(), fileController.GetCollaborators)
+				files.POST("/:id/collaborators", middleware.FileOwnerMiddleware(), fileController.AddCollaborator)
+				files.PUT("/:id/collaborators/:collaboratorId", middleware.FileOwnerMiddleware(), fileController.UpdateCollaborator)
+				files.DELETE("/:id/collaborators/:collaboratorId", middleware.FileOwnerMiddleware(), fileController.RemoveCollaborator)
 			}
 
-			// Share links routes
-			shares := protected.Group("/shares")
-			{
-				shares.GET("/", shareController.GetShareLinks)
-				shares.POST("/", shareController.CreateShareLink)
-				shares.GET("/:id", shareController.GetShareLink)
-				shares.PUT("/:id", shareController.UpdateShareLink)
-				shares.DELETE("/:id", shareController.DeleteShareLink)
-				shares.POST("/:id/presigned-url", shareController.GeneratePresignedURL)
-			}
 		}
 
 		// Admin routes (admin authentication required)
@@ -71,14 +66,6 @@ func SetupRoutes(router *gin.Engine) {
 			admin.GET("/stats", adminController.GetSystemStats)
 		}
 
-		// Public file access routes (no authentication, but may have optional auth)
-		public := v1.Group("/public")
-		public.Use(middleware.OptionalAuthMiddleware())
-		{
-			public.GET("/share/:token", publicController.AccessShareLink)
-			public.POST("/share/:token/download", publicController.DownloadSharedFile)
-			public.POST("/share/:token/presigned-url", publicController.GeneratePresignedURL)
-		}
 	}
 
 	// Health check endpoint
@@ -108,14 +95,7 @@ func SetupRoutes(router *gin.Engine) {
 					"GET  /api/v1/files":        "List user files (protected)",
 					"POST /api/v1/files/upload": "Upload file (protected)",
 				},
-				"shares": gin.H{
-					"GET  /api/v1/shares":                            "List user shares (protected)",
-					"POST /api/v1/shares":                            "Create share link (protected)",
-					"POST /api/v1/shares/:id/presigned-url":          "Generate pre-signed URL (protected)",
-					"GET  /api/v1/public/share/:token":               "Access shared file (public)",
-					"POST /api/v1/public/share/:token/download":      "Download shared file (public)",
-					"POST /api/v1/public/share/:token/presigned-url": "Generate pre-signed URL (public)",
-				},
+
 				"admin": gin.H{
 					"GET /api/v1/admin/users":      "List all users (admin)",
 					"GET /api/v1/admin/stats":      "System statistics (admin)",

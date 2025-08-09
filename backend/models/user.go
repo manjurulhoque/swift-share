@@ -23,11 +23,10 @@ type User struct {
 	DeletedAt     gorm.DeletedAt `json:"-" gorm:"index"`
 
 	// Relationships
-	Files      []File      `json:"files,omitempty" gorm:"foreignKey:UserID"`
-	ShareLinks []ShareLink `json:"share_links,omitempty" gorm:"foreignKey:UserID"`
-	Uploads    []Upload    `json:"uploads,omitempty" gorm:"foreignKey:UserID"`
-	Downloads  []Download  `json:"downloads,omitempty" gorm:"foreignKey:UserID"`
-	AuditLogs  []AuditLog  `json:"audit_logs,omitempty" gorm:"foreignKey:UserID"`
+	Files     []File     `json:"files,omitempty" gorm:"foreignKey:UserID"`
+	Uploads   []Upload   `json:"uploads,omitempty" gorm:"foreignKey:UserID"`
+	Downloads []Download `json:"downloads,omitempty" gorm:"foreignKey:UserID"`
+	AuditLogs []AuditLog `json:"audit_logs,omitempty" gorm:"foreignKey:UserID"`
 }
 
 type UserRegisterRequest struct {
