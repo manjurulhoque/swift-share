@@ -77,7 +77,7 @@ export const filesApi = api.injectEndpoints({
         }),
 
         getPresignedDownloadUrl: builder.mutation<
-            { download_url: string; expires_in_minutes: number },
+            ApiResponse<{ download_url: string; expires_in_minutes: number }>,
             { id: string; expiration?: number }
         >({
             query: ({ id, expiration }) => ({

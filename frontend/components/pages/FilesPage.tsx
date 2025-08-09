@@ -99,7 +99,7 @@ export default function FilesPage() {
             const result = await getPresignedUrl({ id: fileId }).unwrap();
             // Create a temporary link to download the file
             const link = document.createElement("a");
-            link.href = result.download_url;
+            link.href = result.data?.download_url || "";
             link.download = fileName;
             document.body.appendChild(link);
             link.click();
@@ -138,9 +138,10 @@ export default function FilesPage() {
     const handlePreview = async (file: File) => {
         // For now, for images and PDFs use presigned URL; otherwise trigger download
         try {
-            const { download_url } = await getPresignedUrl({
+            const { data } = await getPresignedUrl({
                 id: file.id,
             }).unwrap();
+            const download_url = data?.download_url || "";
             if (
                 file.mime_type.startsWith("image/") ||
                 file.mime_type.includes("pdf")
@@ -190,11 +191,13 @@ export default function FilesPage() {
 
     const handleShare = async (fileId: string) => {
         try {
-            const { download_url } = await getPresignedUrl({
+            const { data } = await getPresignedUrl({
                 id: fileId,
             }).unwrap();
-            await navigator.clipboard.writeText(download_url);
-            toast.success("Download link copied to clipboard!");
+            await navigator.clipboard.writeText(data?.download_url || "");
+            toast.success(
+                `Download link copied to clipboard! Link will expire in ${data?.expires_in_minutes} minutes.`
+            );
         } catch (error) {
             toast.error("Failed to copy link");
         }
