@@ -52,14 +52,13 @@ func (fc *FileController) GetCollaborators(c *gin.Context) {
 		return
 	}
 
-
 	var file models.File
 	if err := database.GetDB().Where("id = ? AND user_id = ?", fileID, user.ID).First(&file).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusForbidden, "Only the owner can get collaborators")
 		return
 	}
 
-	var collaborators []models.FilePermission
+	var collaborators []models.Collaborator
 	if err := database.GetDB().Where("file_id = ?", fileID).Find(&collaborators).Error; err != nil {
 		utils.InternalServerErrorResponse(c, "Failed to get collaborators")
 		return
@@ -94,7 +93,7 @@ func (fc *FileController) AddCollaborator(c *gin.Context) {
 		return
 	}
 
-	collab := models.FilePermission{
+	collab := models.Collaborator{
 		FileID:    file.ID,
 		UserID:    req.UserID,
 		Role:      req.Role,
@@ -144,7 +143,7 @@ func (fc *FileController) UpdateCollaborator(c *gin.Context) {
 		return
 	}
 
-	var collab models.FilePermission
+	var collab models.Collaborator
 	if err := database.GetDB().Where("file_id = ? AND user_id = ?", file.ID, collaboratorID).First(&collab).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusNotFound, "Collaborator not found")
 		return
@@ -191,7 +190,7 @@ func (fc *FileController) RemoveCollaborator(c *gin.Context) {
 		return
 	}
 
-	if err := database.GetDB().Where("file_id = ? AND user_id = ?", file.ID, collaboratorID).Delete(&models.FilePermission{}).Error; err != nil {
+	if err := database.GetDB().Where("file_id = ? AND user_id = ?", file.ID, collaboratorID).Delete(&models.Collaborator{}).Error; err != nil {
 		utils.InternalServerErrorResponse(c, "Failed to remove collaborator")
 		return
 	}
@@ -552,15 +551,37 @@ func (fc *FileController) GetFiles(c *gin.Context) {
 
 	var total int64
 	// Use subquery to count distinct files
-	database.GetDB().Model(&models.File{}).
+	countQuery := database.GetDB().Model(&models.File{}).
 		Joins("LEFT JOIN file_permissions ON files.id = file_permissions.file_id").
-		Where("files.user_id = ? OR file_permissions.user_id = ?", user.ID, user.ID).
-		Distinct("files.id").
-		Count(&total)
+		Where("files.user_id = ? OR file_permissions.user_id = ?", user.ID, user.ID)
+
+	if search != "" {
+		countQuery = countQuery.Where("original_name LIKE ? OR description LIKE ?", "%"+search+"%", "%"+search+"%")
+	}
+
+	countQuery.Distinct("files.id").Count(&total)
 
 	var files []models.File
 	offset := (page - 1) * limit
-	if err := query.Select("files.*").Distinct("files.id").Preload("User").Offset(offset).Limit(limit).Order("files.created_at DESC").Find(&files).Error; err != nil {
+
+	// Use subquery to get distinct file IDs with proper ordering
+	subquery := database.GetDB().Model(&models.File{}).
+		Select("DISTINCT files.id, files.created_at").
+		Joins("LEFT JOIN file_permissions ON files.id = file_permissions.file_id").
+		Where("files.user_id = ? OR file_permissions.user_id = ?", user.ID, user.ID)
+
+	if search != "" {
+		subquery = subquery.Where("original_name LIKE ? OR description LIKE ?", "%"+search+"%", "%"+search+"%")
+	}
+
+	subquery = subquery.Order("files.created_at DESC").Offset(offset).Limit(limit)
+
+	// Get the actual files using the subquery
+	if err := database.GetDB().Model(&models.File{}).
+		Preload("User").
+		Where("files.id IN (?)", subquery.Select("files.id")).
+		Order("files.created_at DESC").
+		Find(&files).Error; err != nil {
 		utils.InternalServerErrorResponse(c, "Failed to retrieve files")
 		return
 	}
@@ -615,7 +636,7 @@ func (fc *FileController) GetFile(c *gin.Context) {
 		return
 	}
 	if file.UserID != user.ID {
-		var perm models.FilePermission
+		var perm models.Collaborator
 		err := database.GetDB().Where("file_id = ? AND user_id = ?", file.ID, user.ID).First(&perm).Error
 		if err != nil || perm.IsExpired() {
 			utils.ErrorResponse(c, http.StatusForbidden, "You do not have access to this file")
@@ -721,7 +742,7 @@ func (fc *FileController) GeneratePresignedURL(c *gin.Context) {
 	}
 	if file.UserID != user.ID {
 		// not owner, check collaborator permission
-		var perm models.FilePermission
+		var perm models.Collaborator
 		err := database.GetDB().Where("file_id = ? AND user_id = ?", file.ID, user.ID).First(&perm).Error
 		if err != nil || perm.IsExpired() {
 			utils.ErrorResponse(c, http.StatusForbidden, "You do not have access to this file")
@@ -832,7 +853,7 @@ func (fc *FileController) DownloadFile(c *gin.Context) {
 		return
 	}
 	if file.UserID != user.ID {
-		var perm models.FilePermission
+		var perm models.Collaborator
 		err := database.GetDB().Where("file_id = ? AND user_id = ?", file.ID, user.ID).First(&perm).Error
 		if err != nil || perm.IsExpired() {
 			utils.ErrorResponse(c, http.StatusForbidden, "You do not have access to this file")

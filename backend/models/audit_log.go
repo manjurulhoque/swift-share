@@ -65,11 +65,11 @@ const (
 
 // Common audit resources
 const (
-	ResourceUser           = "user"
-	ResourceFile           = "file"
-	ResourceFilePermission = "file_permission"
-	ResourceAuth           = "auth"
-	ResourceSystem         = "system"
+	ResourceUser         = "user"
+	ResourceFile         = "file"
+	ResourceCollaborator = "collaborator"
+	ResourceAuth         = "auth"
+	ResourceSystem       = "system"
 )
 
 // Common audit statuses

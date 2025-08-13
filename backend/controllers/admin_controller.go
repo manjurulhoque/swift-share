@@ -143,9 +143,9 @@ func (ac *AdminController) GetSystemStats(c *gin.Context) {
 	database.GetDB().Model(&models.File{}).Where("is_public = ?", false).Count(&stats.PrivateFiles)
 
 	// Collaboration statistics
-	database.GetDB().Model(&models.FilePermission{}).Count(&stats.TotalShares)
-	database.GetDB().Model(&models.FilePermission{}).Where("expires_at IS NULL OR expires_at > NOW()").Count(&stats.ActiveShares)
-	database.GetDB().Model(&models.FilePermission{}).Where("expires_at IS NOT NULL AND expires_at <= NOW()").Count(&stats.ExpiredShares)
+	database.GetDB().Model(&models.Collaborator{}).Count(&stats.TotalShares)
+	database.GetDB().Model(&models.Collaborator{}).Where("expires_at IS NULL OR expires_at > NOW()").Count(&stats.ActiveShares)
+	database.GetDB().Model(&models.Collaborator{}).Where("expires_at IS NOT NULL AND expires_at <= NOW()").Count(&stats.ExpiredShares)
 
 	// Download statistics
 	database.GetDB().Model(&models.File{}).Select("COALESCE(SUM(download_count), 0)").Scan(&stats.TotalDownloads)
