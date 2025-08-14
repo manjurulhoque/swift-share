@@ -8,10 +8,10 @@ import { LoginRequest } from "@/types/auth";
 export function useAuth() {
     const { data: session, status } = useSession();
     const router = useRouter();
-    const [isLoading, setIsLoading] = useState(status === "loading");
+    const [isActionLoading, setIsActionLoading] = useState(false);
 
     const login = async (credentials: LoginRequest) => {
-        setIsLoading(true);
+        setIsActionLoading(true);
         try {
             const result = await signIn("credentials", {
                 email: credentials.email,
@@ -30,19 +30,27 @@ export function useAuth() {
         } catch (error) {
             throw error;
         } finally {
-            setIsLoading(false);
+            setIsActionLoading(false);
         }
     };
 
     const logout = async () => {
-        await signOut({ redirect: false });
-        router.push("/login");
-        router.refresh();
+        setIsActionLoading(true);
+        try {
+            await signOut({ redirect: false });
+            router.push("/login");
+            router.refresh();
+        } finally {
+            setIsActionLoading(false);
+        }
     };
 
     const isAuthenticated = status === "authenticated";
     const isAdmin = session?.user?.isAdmin || false;
     const isActive = session?.user?.isActive || false;
+
+    // isLoading should be true when session is loading OR when performing auth actions
+    const isLoading = status === "loading" || isActionLoading;
 
     return {
         session,

@@ -27,7 +27,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const Navbar = () => {
     const pathname = usePathname();
-    const { session, isAuthenticated, logout } = useAuth();
+    const { session, isAuthenticated, logout, isAdmin } = useAuth();
 
     const isActive = (path: string) => pathname === path;
 
@@ -67,18 +67,6 @@ const Navbar = () => {
                         >
                             <Upload className="h-4 w-4" />
                             <span>Dashboard</span>
-                        </Link>
-
-                        <Link
-                            href="/admin"
-                            className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium ${
-                                isActive("/admin")
-                                    ? "text-blue-600 bg-blue-50"
-                                    : "text-gray-700 hover:text-gray-900"
-                            }`}
-                        >
-                            <Users className="h-4 w-4" />
-                            <span>Admin</span>
                         </Link>
 
                         {isAuthenticated ? (
@@ -135,7 +123,7 @@ const Navbar = () => {
                                             <span>Profile</span>
                                         </Link>
                                     </DropdownMenuItem>
-                                    {session?.user?.isAdmin && (
+                                    {isAdmin && (
                                         <DropdownMenuItem asChild>
                                             <Link
                                                 href="/admin"
