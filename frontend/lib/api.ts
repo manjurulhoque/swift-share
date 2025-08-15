@@ -86,4 +86,12 @@ export const API_ENDPOINTS = {
     USERS: {
         BASE: "users/",
     },
+    FOLDERS: {
+        BASE: "folders/",
+        CREATE: "folders/",
+        GET: "folders/",
+        GET_BY_ID: "folders/",
+        UPDATE: "folders/",
+        DELETE: "folders/",
+    },
 } as const;

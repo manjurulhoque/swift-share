@@ -1,4 +1,4 @@
-import { api } from "@/lib/api";
+import { API_ENDPOINTS, api } from "@/lib/api";
 import { ApiResponse } from "@/types/response";
 
 export interface Folder {
@@ -74,14 +74,14 @@ export const foldersApi = api.injectEndpoints({
                 if (parent_id) params.append("parent_id", parent_id);
                 if (search) params.append("search", search);
 
-                return `/folders?${params.toString()}`;
+                return `${API_ENDPOINTS.FOLDERS.BASE}?${params.toString()}`;
             },
             providesTags: ["Files"],
         }),
 
         // Get specific folder
         getFolder: builder.query<ApiResponse<Folder>, string>({
-            query: (id) => `/folders/${id}`,
+            query: (id) => `${API_ENDPOINTS.FOLDERS.BASE}${id}`,
             providesTags: (result, error, id) => [{ type: "Files", id }],
         }),
 
@@ -91,7 +91,7 @@ export const foldersApi = api.injectEndpoints({
             CreateFolderRequest
         >({
             query: (data) => ({
-                url: "/folders",
+                url: API_ENDPOINTS.FOLDERS.BASE,
                 method: "POST",
                 body: data,
             }),
@@ -104,7 +104,7 @@ export const foldersApi = api.injectEndpoints({
             { id: string; data: UpdateFolderRequest }
         >({
             query: ({ id, data }) => ({
-                url: `/folders/${id}`,
+                url: `${API_ENDPOINTS.FOLDERS.BASE}${id}`,
                 method: "PUT",
                 body: data,
             }),
@@ -120,7 +120,7 @@ export const foldersApi = api.injectEndpoints({
             { id: string; data: MoveFolderRequest }
         >({
             query: ({ id, data }) => ({
-                url: `/folders/${id}/move`,
+                url: `${API_ENDPOINTS.FOLDERS.BASE}${id}/move`,
                 method: "POST",
                 body: data,
             }),
@@ -130,7 +130,7 @@ export const foldersApi = api.injectEndpoints({
         // Delete folder
         deleteFolder: builder.mutation<ApiResponse<void>, string>({
             query: (id) => ({
-                url: `/folders/${id}`,
+                url: `${API_ENDPOINTS.FOLDERS.BASE}${id}`,
                 method: "DELETE",
             }),
             invalidatesTags: ["Files"],

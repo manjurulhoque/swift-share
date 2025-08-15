@@ -349,14 +349,24 @@ func (fc *FileController) UploadMultipleFiles(c *gin.Context) {
 	isPublic := c.PostForm("is_public") == "true"
 	// recipients := c.PostForm("recipients")
 	message := c.PostForm("message")
+	folderIDStr := c.PostForm("folder_id")
 	// expiryDaysStr := c.PostForm("expiry_days")
-
+	var folderID *uuid.UUID
 	// expiryDays := 7 // default
 	// if expiryDaysStr != "" {
 	// 	if days, err := strconv.Atoi(expiryDaysStr); err == nil && days > 0 {
 	// 		expiryDays = days
 	// 	}
 	// }
+	// validate folder id
+	if folderIDStr != "" {
+		var folder models.Folder
+		if err := database.GetDB().Where("id = ? AND user_id = ?", folderIDStr, user.ID).First(&folder).Error; err != nil {
+			utils.ErrorResponse(c, http.StatusBadRequest, "Invalid folder ID")
+			return
+		}
+		folderID = &folder.ID
+	}
 
 	// Validate file sizes
 	for _, file := range files {
@@ -422,6 +432,7 @@ func (fc *FileController) UploadMultipleFiles(c *gin.Context) {
 				IsPublic:      isPublic,
 				Description:   description,
 				Tags:          tags,
+				FolderID:      folderID,
 			}
 
 			// Save to database
