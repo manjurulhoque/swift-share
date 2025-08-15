@@ -7,9 +7,39 @@ definitions:
         type: string
       is_public:
         type: boolean
+      is_starred:
+        type: boolean
       tags:
         maxLength: 255
         type: string
+    type: object
+  models.FolderCreateRequest:
+    properties:
+      color:
+        description: hex color
+        type: string
+      name:
+        maxLength: 255
+        type: string
+      parent_id:
+        type: string
+    required:
+    - name
+    type: object
+  models.FolderMoveRequest:
+    properties:
+      parent_id:
+        type: string
+    type: object
+  models.FolderUpdateRequest:
+    properties:
+      color:
+        type: string
+      name:
+        maxLength: 255
+        type: string
+    required:
+    - name
     type: object
   models.RefreshTokenRequest:
     properties:
@@ -18,41 +48,62 @@ definitions:
     required:
     - refresh_token
     type: object
+  models.ShareLinkAccessRequest:
+    properties:
+      password:
+        type: string
+    type: object
   models.ShareLinkCreateRequest:
     properties:
-      description:
-        maxLength: 500
-        type: string
+      allow_download:
+        type: boolean
       expires_at:
         type: string
       file_id:
         type: string
-      max_downloads:
-        minimum: 0
-        type: integer
-      password:
-        maxLength: 50
-        minLength: 4
+      folder_id:
         type: string
+      password:
+        minLength: 6
+        type: string
+      permission:
+        allOf:
+        - $ref: '#/definitions/models.ShareLinkPermission'
+        enum:
+        - view
+        - comment
+        - edit
     required:
-    - file_id
+    - permission
     type: object
+  models.ShareLinkPermission:
+    enum:
+    - view
+    - comment
+    - edit
+    type: string
+    x-enum-varnames:
+    - PermissionView
+    - PermissionComment
+    - PermissionEdit
   models.ShareLinkUpdateRequest:
     properties:
-      description:
-        maxLength: 500
-        type: string
+      allow_download:
+        type: boolean
       expires_at:
         type: string
       is_active:
         type: boolean
-      max_downloads:
-        minimum: 0
-        type: integer
       password:
-        maxLength: 50
-        minLength: 4
+        minLength: 6
         type: string
+      permission:
+        allOf:
+        - $ref: '#/definitions/models.ShareLinkPermission'
+        enum:
+        - view
+        - comment
+        - edit
     type: object
   models.UserLoginRequest:
     properties:
@@ -555,6 +606,110 @@ paths:
       summary: Download a file
       tags:
       - files
+  /files/{id}/history:
+    get:
+      consumes:
+      - application/json
+      description: Get access history for a specific file
+      parameters:
+      - description: File ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 'Number of access records to return (default: 50, max: 200)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: File access history retrieved successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Invalid file ID
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: File not found
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get file access history
+      tags:
+      - files
+  /files/{id}/presigned-url:
+    post:
+      consumes:
+      - application/json
+      description: Returns a time-limited pre-signed URL to download the file
+      parameters:
+      - description: File ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Expiration in minutes (default 15)
+        in: query
+        name: expiration
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Presigned URL generated
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Invalid file ID
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: File not found
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Generate a pre-signed download URL for a file
+      tags:
+      - files
+  /files/recent:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of files recently accessed by the user
+      parameters:
+      - description: 'Number of recent files to return (default: 20, max: 100)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Recent files retrieved successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get recently accessed files
+      tags:
+      - files
   /files/upload:
     post:
       consumes:
@@ -606,149 +761,88 @@ paths:
       summary: Upload a file
       tags:
       - files
-  /public/share/{token}:
-    get:
-      consumes:
-      - application/json
-      description: Access a shared file using a share token
-      parameters:
-      - description: Share token
-        in: path
-        name: token
-        required: true
-        type: string
-      - description: Share link password (if required)
-        in: query
-        name: password
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Share link accessed successfully
-          schema:
-            $ref: '#/definitions/utils.APIResponse'
-        "400":
-          description: Share token is required
-          schema:
-            $ref: '#/definitions/utils.APIResponse'
-        "401":
-          description: Password required or invalid
-          schema:
-            $ref: '#/definitions/utils.APIResponse'
-        "403":
-          description: Share link not accessible
-          schema:
-            $ref: '#/definitions/utils.APIResponse'
-        "404":
-          description: Share link not found
-          schema:
-            $ref: '#/definitions/utils.APIResponse'
-      summary: Access a shared file
-      tags:
-      - public
-  /public/share/{token}/download:
+  /files/upload-multiple:
     post:
       consumes:
-      - application/json
-      description: Download a file from a share link
+      - multipart/form-data
+      description: Upload multiple files to the system with concurrent processing
       parameters:
-      - description: Share token
-        in: path
-        name: token
+      - description: Files to upload
+        in: formData
+        name: files
         required: true
+        type: file
+      - description: File description
+        in: formData
+        name: description
         type: string
-      - description: Share link password (if required)
-        in: query
-        name: password
+      - description: File tags
+        in: formData
+        name: tags
         type: string
-      produces:
-      - application/octet-stream
-      responses:
-        "200":
-          description: File content
-          schema:
-            type: file
-        "400":
-          description: Share token is required
-          schema:
-            $ref: '#/definitions/utils.APIResponse'
-        "401":
-          description: Password required or invalid
-          schema:
-            $ref: '#/definitions/utils.APIResponse'
-        "403":
-          description: Share link not accessible
-          schema:
-            $ref: '#/definitions/utils.APIResponse'
-        "404":
-          description: Share link or file not found
-          schema:
-            $ref: '#/definitions/utils.APIResponse'
-      summary: Download a shared file
-      tags:
-      - public
-  /public/share/{token}/presigned-url:
-    post:
-      consumes:
-      - application/json
-      description: Generate a pre-signed URL with expiration time for secure file
-        download
-      parameters:
-      - description: Share token
-        in: path
-        name: token
-        required: true
+      - description: Make files public
+        in: formData
+        name: is_public
+        type: boolean
+      - description: Recipients email addresses
+        in: formData
+        name: recipients
         type: string
-      - description: Share link password (if required)
-        in: query
-        name: password
+      - description: Message for recipients
+        in: formData
+        name: message
         type: string
-      - description: 'Expiration time in minutes (default: 10, max: 1440)'
-        in: query
-        name: expiration
+      - description: Expiry days for share links
+        in: formData
+        name: expiry_days
         type: integer
       produces:
       - application/json
       responses:
-        "200":
-          description: Pre-signed URL generated successfully
+        "201":
+          description: Files uploaded successfully
           schema:
             $ref: '#/definitions/utils.APIResponse'
         "400":
-          description: Invalid token or expiration
+          description: Validation error
           schema:
             $ref: '#/definitions/utils.APIResponse'
         "401":
-          description: Password required or invalid
+          description: Unauthorized
           schema:
             $ref: '#/definitions/utils.APIResponse'
-        "403":
-          description: Share link not accessible
+        "413":
+          description: File too large
           schema:
             $ref: '#/definitions/utils.APIResponse'
-        "404":
-          description: Share link not found
+        "500":
+          description: Internal server error
           schema:
             $ref: '#/definitions/utils.APIResponse'
-      summary: Generate a pre-signed URL for public file download
+      security:
+      - BearerAuth: []
+      summary: Upload multiple files
       tags:
-      - public
-  /shares:
+      - files
+  /folders:
     get:
       consumes:
       - application/json
-      description: Get a paginated list of user's share links
+      description: Get a paginated list of folders and files in the specified directory
       parameters:
+      - description: Parent folder ID (empty for root)
+        in: query
+        name: parent_id
+        type: string
       - description: 'Page number (default: 1)'
         in: query
         name: page
         type: integer
-      - description: 'Items per page (default: 10, max: 100)'
+      - description: 'Items per page (default: 20, max: 100)'
         in: query
         name: limit
         type: integer
-      - description: Search term for file name or description
+      - description: Search term for folder/file names
         in: query
         name: search
         type: string
@@ -756,7 +850,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: Share links retrieved successfully
+          description: Directory contents retrieved successfully
           schema:
             $ref: '#/definitions/utils.APIResponse'
         "400":
@@ -769,17 +863,298 @@ paths:
             $ref: '#/definitions/utils.APIResponse'
       security:
       - BearerAuth: []
-      summary: Get user share links
+      summary: Get folders and files in a directory
       tags:
-      - shares
+      - folders
     post:
       consumes:
       - application/json
-      description: Create a new share link for a file
+      description: Create a new folder in the specified parent folder
       parameters:
-      - description: Share link creation information
+      - description: Folder creation data
         in: body
-        name: share
+        name: folder
+        required: true
+        schema:
+          $ref: '#/definitions/models.FolderCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Folder created successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "409":
+          description: Folder already exists
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new folder
+      tags:
+      - folders
+  /folders/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a folder and all its contents
+      parameters:
+      - description: Folder ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Folder deleted successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Invalid folder ID
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: Folder not found
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a folder
+      tags:
+      - folders
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a specific folder
+      parameters:
+      - description: Folder ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Folder retrieved successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Invalid folder ID
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: Folder not found
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a specific folder
+      tags:
+      - folders
+    put:
+      consumes:
+      - application/json
+      description: Update folder name and color
+      parameters:
+      - description: Folder ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Folder update information
+        in: body
+        name: folder
+        required: true
+        schema:
+          $ref: '#/definitions/models.FolderUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Folder updated successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: Folder not found
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update folder information
+      tags:
+      - folders
+  /folders/{id}/move:
+    post:
+      consumes:
+      - application/json
+      description: Move a folder to a different parent folder
+      parameters:
+      - description: Folder ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Move operation data
+        in: body
+        name: move
+        required: true
+        schema:
+          $ref: '#/definitions/models.FolderMoveRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Folder moved successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: Folder not found
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Move folder to a different parent
+      tags:
+      - folders
+  /public/share/{token}:
+    get:
+      consumes:
+      - application/json
+      description: Get basic information about a public share (no password required)
+      parameters:
+      - description: Share Token
+        in: path
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Share info retrieved successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: Share not found
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "410":
+          description: Share expired
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Get public share info
+      tags:
+      - public
+    post:
+      consumes:
+      - application/json
+      description: Access a public share link (no authentication required)
+      parameters:
+      - description: Share Token
+        in: path
+        name: token
+        required: true
+        type: string
+      - description: Password if required
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/models.ShareLinkAccessRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Share accessed successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Invalid token or password
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: Share not found
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "410":
+          description: Share expired
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Access public share
+      tags:
+      - public
+  /share:
+    get:
+      consumes:
+      - application/json
+      description: Get all share links created by the current user
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Items per page (default: 20, max: 100)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Share links retrieved successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user's share links
+      tags:
+      - sharing
+    post:
+      consumes:
+      - application/json
+      description: Create a public share link for a file or folder
+      parameters:
+      - description: Share link details
+        in: body
+        name: request
         required: true
         schema:
           $ref: '#/definitions/models.ShareLinkCreateRequest'
@@ -791,29 +1166,25 @@ paths:
           schema:
             $ref: '#/definitions/utils.APIResponse'
         "400":
-          description: Validation error
+          description: Invalid request
           schema:
             $ref: '#/definitions/utils.APIResponse'
         "401":
           description: Unauthorized
           schema:
             $ref: '#/definitions/utils.APIResponse'
-        "404":
-          description: File not found
-          schema:
-            $ref: '#/definitions/utils.APIResponse'
       security:
       - BearerAuth: []
-      summary: Create a share link
+      summary: Create a new share link
       tags:
-      - shares
-  /shares/{id}:
+      - sharing
+  /share/{id}:
     delete:
       consumes:
       - application/json
-      description: Delete a share link permanently
+      description: Delete an existing share link
       parameters:
-      - description: Share link ID
+      - description: Share Link ID
         in: path
         name: id
         required: true
@@ -839,15 +1210,15 @@ paths:
             $ref: '#/definitions/utils.APIResponse'
       security:
       - BearerAuth: []
-      summary: Delete a share link
+      summary: Delete share link
       tags:
-      - shares
+      - sharing
     get:
       consumes:
       - application/json
-      description: Get detailed information about a specific share link
+      description: Get details of a specific share link
       parameters:
-      - description: Share link ID
+      - description: Share Link ID
         in: path
         name: id
         required: true
@@ -873,23 +1244,22 @@ paths:
             $ref: '#/definitions/utils.APIResponse'
       security:
       - BearerAuth: []
-      summary: Get a specific share link
+      summary: Get share link details
       tags:
-      - shares
+      - sharing
     put:
       consumes:
       - application/json
-      description: Update share link information including password, expiration, and
-        limits
+      description: Update settings of an existing share link
       parameters:
-      - description: Share link ID
+      - description: Share Link ID
         in: path
         name: id
         required: true
         type: string
-      - description: Share link update information
+      - description: Updated share link settings
         in: body
-        name: share
+        name: request
         required: true
         schema:
           $ref: '#/definitions/models.ShareLinkUpdateRequest'
@@ -901,7 +1271,7 @@ paths:
           schema:
             $ref: '#/definitions/utils.APIResponse'
         "400":
-          description: Validation error
+          description: Invalid request
           schema:
             $ref: '#/definitions/utils.APIResponse'
         "401":
@@ -916,32 +1286,99 @@ paths:
       - BearerAuth: []
       summary: Update share link
       tags:
-      - shares
-  /shares/{id}/presigned-url:
-    post:
+      - sharing
+  /share/stats:
+    get:
       consumes:
       - application/json
-      description: Generate a pre-signed URL with expiration time for secure file
-        download
+      description: Get sharing statistics for the current user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Share statistics retrieved successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get sharing statistics
+      tags:
+      - sharing
+  /trash:
+    get:
+      consumes:
+      - application/json
+      description: Get all files and folders in trash for the current user
       parameters:
-      - description: Share link ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: 'Expiration time in minutes (default: 10, max: 1440)'
+      - description: 'Page number (default: 1)'
         in: query
-        name: expiration
+        name: page
+        type: integer
+      - description: 'Items per page (default: 20, max: 100)'
+        in: query
+        name: limit
         type: integer
       produces:
       - application/json
       responses:
         "200":
-          description: Pre-signed URL generated successfully
+          description: Trashed items retrieved successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all trashed items
+      tags:
+      - trash
+  /trash/empty:
+    delete:
+      consumes:
+      - application/json
+      description: Permanently delete all items in trash (cannot be undone)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Trash emptied successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Empty trash
+      tags:
+      - trash
+  /trash/files/{id}:
+    post:
+      consumes:
+      - application/json
+      description: Move a file to trash (soft delete)
+      parameters:
+      - description: File ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: File moved to trash successfully
           schema:
             $ref: '#/definitions/utils.APIResponse'
         "400":
-          description: Invalid share link ID or expiration
+          description: Invalid file ID
           schema:
             $ref: '#/definitions/utils.APIResponse'
         "401":
@@ -949,14 +1386,190 @@ paths:
           schema:
             $ref: '#/definitions/utils.APIResponse'
         "404":
-          description: Share link not found
+          description: File not found
           schema:
             $ref: '#/definitions/utils.APIResponse'
       security:
       - BearerAuth: []
-      summary: Generate a pre-signed URL for file download
+      summary: Move file to trash
       tags:
-      - shares
+      - trash
+  /trash/files/{id}/permanent:
+    delete:
+      consumes:
+      - application/json
+      description: Permanently delete a file from trash (cannot be undone)
+      parameters:
+      - description: File ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: File permanently deleted
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Invalid file ID
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: File not found in trash
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Permanently delete file
+      tags:
+      - trash
+  /trash/files/{id}/restore:
+    post:
+      consumes:
+      - application/json
+      description: Restore a file from trash
+      parameters:
+      - description: File ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: File restored successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Invalid file ID
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: File not found in trash
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Restore file from trash
+      tags:
+      - trash
+  /trash/folders/{id}:
+    post:
+      consumes:
+      - application/json
+      description: Move a folder and all its contents to trash (soft delete)
+      parameters:
+      - description: Folder ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Folder moved to trash successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Invalid folder ID
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: Folder not found
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Move folder to trash
+      tags:
+      - trash
+  /trash/folders/{id}/permanent:
+    delete:
+      consumes:
+      - application/json
+      description: Permanently delete a folder and all its contents from trash (cannot
+        be undone)
+      parameters:
+      - description: Folder ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Folder permanently deleted
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Invalid folder ID
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: Folder not found in trash
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Permanently delete folder
+      tags:
+      - trash
+  /trash/folders/{id}/restore:
+    post:
+      consumes:
+      - application/json
+      description: Restore a folder and all its contents from trash
+      parameters:
+      - description: Folder ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Folder restored successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Invalid folder ID
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: Folder not found in trash
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Restore folder from trash
+      tags:
+      - trash
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer" followed by a space and JWT token.
