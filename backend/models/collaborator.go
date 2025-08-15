@@ -18,16 +18,18 @@ const (
 
 type Collaborator struct {
 	ID        uuid.UUID        `json:"id" gorm:"type:uuid;primary_key"`
-	FileID    uuid.UUID        `json:"file_id" gorm:"type:uuid;not null;index:idx_file_user,unique"`
-	UserID    uuid.UUID        `json:"user_id" gorm:"type:uuid;not null;index:idx_file_user,unique"`
+	FileID    *uuid.UUID       `json:"file_id" gorm:"type:uuid;index"`   // nullable for folder collaborations
+	FolderID  *uuid.UUID       `json:"folder_id" gorm:"type:uuid;index"` // nullable for file collaborations
+	UserID    uuid.UUID        `json:"user_id" gorm:"type:uuid;not null;index"`
 	Role      CollaboratorRole `json:"role" gorm:"size:20;not null"`
 	ExpiresAt *time.Time       `json:"expires_at"`
 	CreatedAt time.Time        `json:"created_at"`
 	UpdatedAt time.Time        `json:"updated_at"`
 
 	// Relationships
-	File File `json:"file,omitempty" gorm:"foreignKey:FileID"`
-	User User `json:"user,omitempty" gorm:"foreignKey:UserID"`
+	File   *File   `json:"file,omitempty" gorm:"foreignKey:FileID"`
+	Folder *Folder `json:"folder,omitempty" gorm:"foreignKey:FolderID"`
+	User   User    `json:"user,omitempty" gorm:"foreignKey:UserID"`
 }
 
 func (c *Collaborator) BeforeCreate(tx *gorm.DB) error {

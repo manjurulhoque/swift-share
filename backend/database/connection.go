@@ -74,11 +74,14 @@ func Migrate() {
 
 	err := db.AutoMigrate(
 		&models.User{},
+		&models.Folder{},
 		&models.File{},
 		&models.Collaborator{},
 		&models.Download{},
 		&models.Upload{},
 		&models.AuditLog{},
+		&models.FileAccess{},
+		&models.ShareLink{},
 	)
 
 	if err != nil {

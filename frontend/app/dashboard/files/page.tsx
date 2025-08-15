@@ -1,5 +1,5 @@
-import FilesPage from "@/components/pages/FilesPage";
+import FileBrowserPage from "@/components/pages/FileBrowserPage";
 
 export default function Page() {
-    return <FilesPage />;
+    return <FileBrowserPage />;
 }

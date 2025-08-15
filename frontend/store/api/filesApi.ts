@@ -87,6 +87,26 @@ export const filesApi = api.injectEndpoints({
                 method: "POST",
             }),
         }),
+
+        getRecentFiles: builder.query<
+            ApiResponse<{ recent_files: any[]; total: number }>,
+            { limit?: number }
+        >({
+            query: ({ limit = 20 }) => ({
+                url: `/files/recent?limit=${limit}`,
+            }),
+            providesTags: ["Files"],
+        }),
+
+        getFileAccessHistory: builder.query<
+            ApiResponse<{ access_history: any[]; total: number; file: any }>,
+            { id: string; limit?: number }
+        >({
+            query: ({ id, limit = 50 }) => ({
+                url: `/files/${id}/history?limit=${limit}`,
+            }),
+            providesTags: (result, error, { id }) => [{ type: "Files", id }],
+        }),
     }),
 });
 
@@ -98,4 +118,6 @@ export const {
     useUpdateFileMutation,
     useDeleteFileMutation,
     useGetPresignedDownloadUrlMutation,
+    useGetRecentFilesQuery,
+    useGetFileAccessHistoryQuery,
 } = filesApi;

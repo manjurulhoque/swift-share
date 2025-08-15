@@ -1,11 +1,13 @@
 export interface File {
     id: string;
+    folder_id?: string;
     file_name: string;
     original_name: string;
     file_size: number;
     mime_type: string;
     file_extension: string;
     is_public: boolean;
+    is_starred: boolean;
     download_count: number;
     description: string;
     tags: string;
@@ -17,18 +19,25 @@ export interface File {
         last_name: string;
         email: string;
     };
+    folder?: {
+        id: string;
+        name: string;
+        path: string;
+    };
 }
 
 export interface FileUploadRequest {
     description?: string;
     tags?: string;
     is_public?: boolean;
+    folder_id?: string;
 }
 
 export interface FileUpdateRequest {
     description?: string;
     tags?: string;
     is_public?: boolean;
+    is_starred?: boolean;
 }
 
 export interface FilesResponse {

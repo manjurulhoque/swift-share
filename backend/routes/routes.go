@@ -10,6 +10,9 @@ func SetupRoutes(router *gin.Engine) {
 	// Initialize controllers
 	authController := controllers.NewAuthController()
 	fileController := controllers.NewFileController()
+	folderController := controllers.NewFolderController()
+	trashController := controllers.NewTrashController()
+	shareController := controllers.NewShareController()
 	adminController := controllers.NewAdminController()
 
 	// API v1 routes
@@ -21,6 +24,13 @@ func SetupRoutes(router *gin.Engine) {
 			auth.POST("/register", authController.Register)
 			auth.POST("/login", authController.Login)
 			auth.POST("/refresh", authController.RefreshToken)
+		}
+
+		// Public share access routes
+		public := v1.Group("/public")
+		{
+			public.GET("/share/:token", shareController.GetPublicShareInfo)
+			public.POST("/share/:token", shareController.AccessPublicShare)
 		}
 
 		// Protected routes (authentication required)
@@ -39,9 +49,11 @@ func SetupRoutes(router *gin.Engine) {
 			files := protected.Group("/files")
 			{
 				files.GET("/", fileController.GetFiles)
+				files.GET("/recent", fileController.GetRecentFiles)
 				files.POST("/upload", fileController.UploadFile)
 				files.POST("/upload-multiple", fileController.UploadMultipleFiles)
 				files.GET("/:id", fileController.GetFile)
+				files.GET("/:id/history", fileController.GetFileAccessHistory)
 				// Owner-only operations
 				files.PUT("/:id", middleware.FileOwnerMiddleware(), fileController.UpdateFile)
 				files.DELETE("/:id", middleware.FileOwnerMiddleware(), fileController.DeleteFile)
@@ -53,6 +65,41 @@ func SetupRoutes(router *gin.Engine) {
 				files.POST("/:id/collaborators", middleware.FileOwnerMiddleware(), fileController.AddCollaborator)
 				files.PUT("/:id/collaborators/:collaboratorId", middleware.FileOwnerMiddleware(), fileController.UpdateCollaborator)
 				files.DELETE("/:id/collaborators/:collaboratorId", middleware.FileOwnerMiddleware(), fileController.RemoveCollaborator)
+			}
+
+			// Folder management routes
+			folders := protected.Group("/folders")
+			{
+				folders.GET("/", folderController.GetFolders)
+				folders.POST("/", folderController.CreateFolder)
+				folders.GET("/:id", folderController.GetFolder)
+				folders.PUT("/:id", folderController.UpdateFolder)
+				folders.DELETE("/:id", folderController.DeleteFolder)
+				folders.POST("/:id/move", folderController.MoveFolder)
+			}
+
+			// Trash management routes
+			trash := protected.Group("/trash")
+			{
+				trash.GET("/", trashController.GetTrashedItems)
+				trash.POST("/files/:id", trashController.MoveFileToTrash)
+				trash.POST("/folders/:id", trashController.MoveFolderToTrash)
+				trash.POST("/files/:id/restore", trashController.RestoreFile)
+				trash.POST("/folders/:id/restore", trashController.RestoreFolder)
+				trash.DELETE("/files/:id/permanent", trashController.PermanentlyDeleteFile)
+				trash.DELETE("/folders/:id/permanent", trashController.PermanentlyDeleteFolder)
+				trash.DELETE("/empty", trashController.EmptyTrash)
+			}
+
+			// Share management routes
+			share := protected.Group("/share")
+			{
+				share.GET("/", shareController.GetShareLinks)
+				share.POST("/", shareController.CreateShareLink)
+				share.GET("/stats", shareController.GetShareStats)
+				share.GET("/:id", shareController.GetShareLink)
+				share.PUT("/:id", shareController.UpdateShareLink)
+				share.DELETE("/:id", shareController.DeleteShareLink)
 			}
 
 		}

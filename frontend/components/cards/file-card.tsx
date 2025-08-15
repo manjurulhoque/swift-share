@@ -12,6 +12,7 @@ import {
     Lock,
     Calendar,
     MoreHorizontal,
+    Star,
 } from "lucide-react";
 import {
     DropdownMenu,
@@ -31,6 +32,7 @@ interface FileCardProps {
     onTogglePublic: (file: File) => void;
     onEdit: (file: File) => void;
     onDelete: (file: File) => void;
+    onToggleStar?: (file: File) => void;
     isDownloading?: boolean;
 }
 
@@ -42,6 +44,7 @@ export function FileCard({
     onTogglePublic,
     onEdit,
     onDelete,
+    onToggleStar,
     isDownloading = false,
 }: FileCardProps) {
     const formatFileSize = (bytes: number): string => {
@@ -124,6 +127,20 @@ export function FileCard({
                                 <Share className="h-4 w-4 mr-2" />
                                 Share
                             </DropdownMenuItem>
+                            {onToggleStar && (
+                                <DropdownMenuItem
+                                    onClick={() => onToggleStar(file)}
+                                >
+                                    <Star
+                                        className={`h-4 w-4 mr-2 ${
+                                            file.is_starred
+                                                ? "text-yellow-500 fill-current"
+                                                : ""
+                                        }`}
+                                    />
+                                    {file.is_starred ? "Unstar" : "Star"}
+                                </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem
                                 onClick={() => onTogglePublic(file)}
                             >

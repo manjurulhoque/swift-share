@@ -28,13 +28,17 @@ import (
 var appLogger *slog.Logger
 
 type FileController struct {
-	auditService *services.AuditService
+	auditService      *services.AuditService
+	fileAccessService *services.FileAccessService
+	trashService      *services.TrashService
 }
 
 func NewFileController() *FileController {
 	appLogger = config.GetLogger()
 	return &FileController{
-		auditService: services.NewAuditService(),
+		auditService:      services.NewAuditService(),
+		fileAccessService: services.NewFileAccessService(),
+		trashService:      services.NewTrashService(),
 	}
 }
 
@@ -94,7 +98,7 @@ func (fc *FileController) AddCollaborator(c *gin.Context) {
 	}
 
 	collab := models.Collaborator{
-		FileID:    file.ID,
+		FileID:    &file.ID,
 		UserID:    req.UserID,
 		Role:      req.Role,
 		ExpiresAt: req.ExpiresAt,
@@ -540,20 +544,20 @@ func (fc *FileController) GetFiles(c *gin.Context) {
 		limit = 10
 	}
 
-	// Owner files or collaborator files
+	// Owner files or collaborator files (exclude trashed items)
 	query := database.GetDB().Model(&models.File{}).
 		Joins("LEFT JOIN file_permissions ON files.id = file_permissions.file_id").
-		Where("files.user_id = ? OR file_permissions.user_id = ?", user.ID, user.ID)
+		Where("(files.user_id = ? OR file_permissions.user_id = ?) AND files.is_trashed = false", user.ID, user.ID)
 
 	if search != "" {
 		query = query.Where("original_name LIKE ? OR description LIKE ?", "%"+search+"%", "%"+search+"%")
 	}
 
 	var total int64
-	// Use subquery to count distinct files
+	// Use subquery to count distinct files (exclude trashed items)
 	countQuery := database.GetDB().Model(&models.File{}).
 		Joins("LEFT JOIN file_permissions ON files.id = file_permissions.file_id").
-		Where("files.user_id = ? OR file_permissions.user_id = ?", user.ID, user.ID)
+		Where("(files.user_id = ? OR file_permissions.user_id = ?) AND files.is_trashed = false", user.ID, user.ID)
 
 	if search != "" {
 		countQuery = countQuery.Where("original_name LIKE ? OR description LIKE ?", "%"+search+"%", "%"+search+"%")
@@ -643,6 +647,9 @@ func (fc *FileController) GetFile(c *gin.Context) {
 			return
 		}
 	}
+
+	// Track file access (view)
+	fc.fileAccessService.LogFileAccess(user.ID, file.ID, models.ActionView)
 
 	utils.SuccessResponse(c, http.StatusOK, "File retrieved successfully", file.ToResponse())
 }
@@ -765,6 +772,9 @@ func (fc *FileController) GeneratePresignedURL(c *gin.Context) {
 		return
 	}
 
+	// Track file access
+	fc.fileAccessService.LogFileAccess(user.ID, file.ID, models.ActionView)
+
 	fc.auditService.LogEvent(&user.ID, models.ActionFileDownload, models.ResourceFile, &file.ID,
 		fmt.Sprintf("Generated presigned URL for: %s", file.OriginalName), c.ClientIP(), c.GetHeader("User-Agent"), models.StatusSuccess)
 
@@ -806,19 +816,16 @@ func (fc *FileController) DeleteFile(c *gin.Context) {
 		return
 	}
 
-	// Delete from storage backend
-	storageSvc := storage.GetStorage()
-	_ = storageSvc.DeleteFile(c.Request.Context(), filepath.Join(user.ID.String(), file.FileName))
-
-	if err := database.GetDB().Delete(&file).Error; err != nil {
-		utils.InternalServerErrorResponse(c, "Failed to delete file record")
+	// Move to trash instead of permanently deleting
+	if err := fc.trashService.MoveFileToTrash(user.ID, fileID); err != nil {
+		utils.InternalServerErrorResponse(c, "Failed to move file to trash")
 		return
 	}
 
 	fc.auditService.LogEvent(&user.ID, models.ActionFileDelete, models.ResourceFile, &file.ID,
-		fmt.Sprintf("File deleted: %s", file.OriginalName), c.ClientIP(), c.GetHeader("User-Agent"), models.StatusSuccess)
+		fmt.Sprintf("File moved to trash: %s", file.OriginalName), c.ClientIP(), c.GetHeader("User-Agent"), models.StatusSuccess)
 
-	utils.SuccessResponse(c, http.StatusOK, "File deleted successfully", nil)
+	utils.SuccessResponse(c, http.StatusOK, "File moved to trash successfully", nil)
 }
 
 // DownloadFile godoc
@@ -864,6 +871,9 @@ func (fc *FileController) DownloadFile(c *gin.Context) {
 	// Increment download count
 	database.GetDB().Model(&file).Update("download_count", file.DownloadCount+1)
 
+	// Track file access
+	fc.fileAccessService.LogFileAccess(user.ID, file.ID, models.ActionDownload)
+
 	fc.auditService.LogEvent(&user.ID, models.ActionFileDownload, models.ResourceFile, &file.ID,
 		fmt.Sprintf("File downloaded: %s", file.OriginalName), c.ClientIP(), c.GetHeader("User-Agent"), models.StatusSuccess)
 
@@ -884,4 +894,112 @@ func (fc *FileController) DownloadFile(c *gin.Context) {
 	c.Header("Content-Type", file.MimeType)
 	c.Header("Content-Length", fmt.Sprintf("%d", file.FileSize))
 	c.File(file.FilePath)
+}
+
+// GetRecentFiles godoc
+// @Summary Get recently accessed files
+// @Description Get a list of files recently accessed by the user
+// @Tags files
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param limit query int false "Number of recent files to return (default: 20, max: 100)"
+// @Success 200 {object} utils.APIResponse "Recent files retrieved successfully"
+// @Failure 401 {object} utils.APIResponse "Unauthorized"
+// @Router /files/recent [get]
+func (fc *FileController) GetRecentFiles(c *gin.Context) {
+	user, exists := middleware.GetUserFromContext(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not found in context")
+		return
+	}
+
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+
+	accesses, err := fc.fileAccessService.GetRecentFiles(user.ID, limit)
+	if err != nil {
+		appLogger.Error("Failed to get recent files", "error", err, "user_id", user.ID)
+		utils.InternalServerErrorResponse(c, "Failed to retrieve recent files")
+		return
+	}
+
+	var responses []models.FileAccessResponse
+	for _, access := range accesses {
+		responses = append(responses, access.ToResponse())
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, "Recent files retrieved successfully", gin.H{
+		"recent_files": responses,
+		"total":        len(responses),
+	})
+}
+
+// GetFileAccessHistory godoc
+// @Summary Get file access history
+// @Description Get access history for a specific file
+// @Tags files
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "File ID"
+// @Param limit query int false "Number of access records to return (default: 50, max: 200)"
+// @Success 200 {object} utils.APIResponse "File access history retrieved successfully"
+// @Failure 400 {object} utils.APIResponse "Invalid file ID"
+// @Failure 401 {object} utils.APIResponse "Unauthorized"
+// @Failure 404 {object} utils.APIResponse "File not found"
+// @Router /files/{id}/history [get]
+func (fc *FileController) GetFileAccessHistory(c *gin.Context) {
+	user, exists := middleware.GetUserFromContext(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not found in context")
+		return
+	}
+
+	fileID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid file ID")
+		return
+	}
+
+	// Check if user has access to the file
+	var file models.File
+	if err := database.GetDB().Where("id = ?", fileID).First(&file).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusNotFound, "File not found")
+		return
+	}
+
+	if file.UserID != user.ID {
+		var perm models.Collaborator
+		err := database.GetDB().Where("file_id = ? AND user_id = ?", file.ID, user.ID).First(&perm).Error
+		if err != nil || perm.IsExpired() {
+			utils.ErrorResponse(c, http.StatusForbidden, "You do not have access to this file")
+			return
+		}
+	}
+
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
+	if limit < 1 || limit > 200 {
+		limit = 50
+	}
+
+	accesses, err := fc.fileAccessService.GetFileAccessHistory(fileID, limit)
+	if err != nil {
+		appLogger.Error("Failed to get file access history", "error", err, "file_id", fileID)
+		utils.InternalServerErrorResponse(c, "Failed to retrieve file access history")
+		return
+	}
+
+	var responses []models.FileAccessResponse
+	for _, access := range accesses {
+		responses = append(responses, access.ToResponse())
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, "File access history retrieved successfully", gin.H{
+		"access_history": responses,
+		"total":          len(responses),
+		"file":           file.ToResponse(),
+	})
 }

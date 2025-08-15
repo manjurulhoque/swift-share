@@ -28,6 +28,8 @@ import {
     Shield,
     LogOut,
     ChevronDown,
+    Clock,
+    Trash2,
 } from "lucide-react";
 import {
     DropdownMenu,
@@ -56,6 +58,11 @@ const menuItems = [
         icon: File,
     },
     {
+        title: "Recent Files",
+        url: "/dashboard/recent",
+        icon: Clock,
+    },
+    {
         title: "Shared Links",
         url: "/dashboard/shared",
         icon: Share,
@@ -69,6 +76,11 @@ const menuItems = [
         title: "Downloads",
         url: "/dashboard/downloads",
         icon: Download,
+    },
+    {
+        title: "Trash",
+        url: "/dashboard/trash",
+        icon: Trash2,
     },
 ];
 
