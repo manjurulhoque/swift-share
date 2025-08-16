@@ -112,6 +112,7 @@ export default function FilesPage() {
     };
 
     const handleEdit = (file: File) => {
+        console.log("file", file);
         setSelectedFile(file);
         setEditForm({
             description: file.description || "",

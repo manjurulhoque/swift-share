@@ -351,6 +351,7 @@ export function FilePreview({
                                 <Button
                                     variant="ghost"
                                     size="sm"
+                                    title="Zoom Out"
                                     onClick={() =>
                                         setZoom(Math.max(25, zoom - 25))
                                     }
@@ -364,6 +365,7 @@ export function FilePreview({
                                 <Button
                                     variant="ghost"
                                     size="sm"
+                                    title="Zoom In"
                                     onClick={() =>
                                         setZoom(Math.min(400, zoom + 25))
                                     }
@@ -374,6 +376,7 @@ export function FilePreview({
                                 <Button
                                     variant="ghost"
                                     size="sm"
+                                    title="Rotate 90°"
                                     onClick={() =>
                                         setRotation((rotation + 90) % 360)
                                     }
@@ -383,7 +386,12 @@ export function FilePreview({
                             </>
                         )}
 
-                        <Button variant="ghost" size="sm" onClick={copyFileUrl}>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={copyFileUrl}
+                            title="Copy File URL"
+                        >
                             <Copy className="h-4 w-4" />
                         </Button>
 
@@ -391,6 +399,7 @@ export function FilePreview({
                             <Button
                                 variant="ghost"
                                 size="sm"
+                                title="Toggle Star"
                                 onClick={() => onToggleStar(file)}
                             >
                                 <Star
@@ -407,6 +416,7 @@ export function FilePreview({
                             <Button
                                 variant="ghost"
                                 size="sm"
+                                title="Share File"
                                 onClick={() => onShare(file.id)}
                             >
                                 <Share className="h-4 w-4" />
@@ -417,6 +427,7 @@ export function FilePreview({
                             <Button
                                 variant="ghost"
                                 size="sm"
+                                title="Download File"
                                 onClick={() =>
                                     onDownload(file.id, file.original_name)
                                 }
