@@ -13,6 +13,7 @@ import {
     Calendar,
     MoreHorizontal,
     Star,
+    Folder,
 } from "lucide-react";
 import {
     DropdownMenu,
@@ -33,6 +34,7 @@ interface FileCardProps {
     onEdit: (file: File) => void;
     onDelete: (file: File) => void;
     onToggleStar?: (file: File) => void;
+    onMove?: (file: File) => void;
     isDownloading?: boolean;
 }
 
@@ -45,6 +47,7 @@ export function FileCard({
     onEdit,
     onDelete,
     onToggleStar,
+    onMove,
     isDownloading = false,
 }: FileCardProps) {
     const formatFileSize = (bytes: number): string => {
@@ -157,6 +160,12 @@ export function FileCard({
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit
                             </DropdownMenuItem>
+                            {onMove && (
+                                <DropdownMenuItem onClick={() => onMove(file)}>
+                                    <Folder className="h-4 w-4 mr-2" />
+                                    Move
+                                </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                                 onClick={() => onDelete(file)}

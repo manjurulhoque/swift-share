@@ -68,6 +68,18 @@ export const filesApi = api.injectEndpoints({
             invalidatesTags: (result, error, { id }) => [{ type: "Files", id }],
         }),
 
+        moveFile: builder.mutation<
+            ApiResponse<File>,
+            { id: string; folder_id?: string }
+        >({
+            query: ({ id, folder_id }) => ({
+                url: `${API_ENDPOINTS.FILES.MOVE}${id}`,
+                method: "POST",
+                body: { folder_id },
+            }),
+            invalidatesTags: ["Files"],
+        }),
+
         deleteFile: builder.mutation<void, string>({
             query: (id) => ({
                 url: `/files/${id}`,
@@ -116,6 +128,7 @@ export const {
     useUploadFileMutation,
     useUploadMultipleFilesMutation,
     useUpdateFileMutation,
+    useMoveFileMutation,
     useDeleteFileMutation,
     useGetPresignedDownloadUrlMutation,
     useGetRecentFilesQuery,

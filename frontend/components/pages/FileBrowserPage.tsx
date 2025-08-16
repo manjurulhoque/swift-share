@@ -37,6 +37,7 @@ import {
     Trash2,
     SortAsc,
     SortDesc,
+    Folder as FolderIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -45,12 +46,13 @@ import {
     useUpdateFolderMutation,
     useDeleteFolderMutation,
     useMoveFolderMutation,
-    Folder,
+    Folder as FolderType,
     Breadcrumb,
 } from "@/store/api/foldersApi";
 import {
     useUpdateFileMutation,
     useDeleteFileMutation,
+    useMoveFileMutation,
 } from "@/store/api/filesApi";
 import { File } from "@/types/file";
 import { useAuth } from "@/hooks/use-auth";
@@ -121,6 +123,9 @@ export default function FileBrowserPage() {
     const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
     const [showCreateFolderDialog, setShowCreateFolderDialog] = useState(false);
     const [showUploadDialog, setShowUploadDialog] = useState(false);
+    const [showMoveFileDialog, setShowMoveFileDialog] = useState(false);
+    const [fileToMove, setFileToMove] = useState<File | null>(null);
+    const [targetFolderId, setTargetFolderId] = useState<string>("");
     const [newFolderName, setNewFolderName] = useState("");
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [searchFilters, setSearchFilters] = useState<SearchFilters>({
@@ -152,6 +157,7 @@ export default function FileBrowserPage() {
     const [moveFolder] = useMoveFolderMutation();
     const [updateFile] = useUpdateFileMutation();
     const [deleteFile] = useDeleteFileMutation();
+    const [moveFile] = useMoveFileMutation();
 
     // Redirect if not authenticated
     if (!isAuthLoading && !isAuthenticated) {
@@ -206,7 +212,7 @@ export default function FileBrowserPage() {
         }
     };
 
-    const handleEditFolder = async (folder: Folder) => {
+    const handleEditFolder = async (folder: FolderType) => {
         try {
             await updateFolder({
                 id: folder.id,
@@ -222,7 +228,7 @@ export default function FileBrowserPage() {
         }
     };
 
-    const handleDeleteFolder = async (folder: Folder) => {
+    const handleDeleteFolder = async (folder: FolderType) => {
         try {
             await deleteFolder(folder.id).unwrap();
             toast.success("Folder deleted successfully!");
@@ -232,7 +238,7 @@ export default function FileBrowserPage() {
         }
     };
 
-    const handleMoveFolder = async (folder: Folder) => {
+    const handleMoveFolder = async (folder: FolderType) => {
         // TODO: Implement folder move dialog
         toast.info("Move folder feature coming soon!");
     };
@@ -262,6 +268,29 @@ export default function FileBrowserPage() {
             toast.error("Failed to delete file");
             console.error("Delete file error:", error);
         }
+    };
+
+    const handleMoveFile = async (file: File) => {
+        try {
+            await moveFile({
+                id: file.id,
+                folder_id: targetFolderId || undefined,
+            }).unwrap();
+            toast.success(`${file.original_name} moved successfully!`);
+            setShowMoveFileDialog(false);
+            setFileToMove(null);
+            setTargetFolderId("");
+            refetch();
+        } catch (error) {
+            toast.error("Failed to move file");
+            console.error("Move file error:", error);
+        }
+    };
+
+    const openMoveFileDialog = (file: File) => {
+        setFileToMove(file);
+        setTargetFolderId("");
+        setShowMoveFileDialog(true);
     };
 
     const handlePreviewFile = (file: File) => {
@@ -612,6 +641,19 @@ export default function FileBrowserPage() {
                                     >
                                         Clear
                                     </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                            // TODO: Implement bulk move
+                                            toast.info(
+                                                "Bulk move feature coming soon!"
+                                            );
+                                        }}
+                                    >
+                                        <FolderIcon className="h-4 w-4 mr-2" />
+                                        Move
+                                    </Button>
                                     <Button variant="ghost" size="sm">
                                         <Trash2 className="h-4 w-4 mr-2" />
                                         Delete
@@ -716,6 +758,9 @@ export default function FileBrowserPage() {
                                                         handleToggleFileStar(
                                                             file
                                                         )
+                                                    }
+                                                    onMove={() =>
+                                                        openMoveFileDialog(file)
                                                     }
                                                     isDownloading={false}
                                                 />
@@ -937,6 +982,68 @@ export default function FileBrowserPage() {
                     onShare={handleShareFile}
                     onToggleStar={handleToggleFileStar}
                 />
+
+                {/* Move File Dialog */}
+                <Dialog
+                    open={showMoveFileDialog}
+                    onOpenChange={setShowMoveFileDialog}
+                >
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Move File</DialogTitle>
+                            <DialogDescription>
+                                Move{" "}
+                                <strong>{fileToMove?.original_name}</strong> to
+                                a different location
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                            <div>
+                                <Label htmlFor="targetFolder">
+                                    Target Folder
+                                </Label>
+                                <select
+                                    id="targetFolder"
+                                    value={targetFolderId}
+                                    onChange={(e) =>
+                                        setTargetFolderId(e.target.value)
+                                    }
+                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                >
+                                    <option value="">Root Folder</option>
+                                    {folders.map((folder) => (
+                                        <option
+                                            key={folder.id}
+                                            value={folder.id}
+                                        >
+                                            {folder.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setShowMoveFileDialog(false);
+                                    setFileToMove(null);
+                                    setTargetFolderId("");
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={() =>
+                                    fileToMove && handleMoveFile(fileToMove)
+                                }
+                                disabled={!fileToMove}
+                            >
+                                Move File
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </SidebarInset>
     );

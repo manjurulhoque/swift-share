@@ -73,6 +73,7 @@ export const API_ENDPOINTS = {
         GET_ALL: "files/get-all/",
         GET_ALL_BY_USER: "files/get-all-by-user/",
         GET_ALL_BY_USER_AND_FILE_NAME: "files/get-all-by-user-and-file-name/",
+        MOVE: "files/move/",
     },
     SHARES: {
         BASE: "shares/",
