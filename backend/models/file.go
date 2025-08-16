@@ -70,6 +70,10 @@ type FileUpdateRequest struct {
 	IsStarred   bool   `json:"is_starred"`
 }
 
+type FileMoveRequest struct {
+	FolderID *uuid.UUID `json:"folder_id" validate:"omitempty"`
+}
+
 // BeforeCreate hook to set UUID
 func (f *File) BeforeCreate(tx *gorm.DB) error {
 	if f.ID == uuid.Nil {

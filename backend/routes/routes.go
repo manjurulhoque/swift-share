@@ -57,6 +57,7 @@ func SetupRoutes(router *gin.Engine) {
 				// Owner-only operations
 				files.PUT("/:id", middleware.FileOwnerMiddleware(), fileController.UpdateFile)
 				files.DELETE("/:id", middleware.FileOwnerMiddleware(), fileController.DeleteFile)
+				files.POST("/:id/move", middleware.FileOwnerMiddleware(), fileController.MoveFile)
 				// Download/presign allow collaborators; keep standard auth only
 				files.GET("/:id/download", fileController.DownloadFile)
 				files.POST("/:id/presigned-url", fileController.GeneratePresignedURL)

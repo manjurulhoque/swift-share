@@ -1014,3 +1014,87 @@ func (fc *FileController) GetFileAccessHistory(c *gin.Context) {
 		"file":           file.ToResponse(),
 	})
 }
+
+// MoveFile godoc
+// @Summary Move a file to a different folder
+// @Description Move a file to a different folder or to root
+// @Tags files
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "File ID"
+// @Param request body models.FileMoveRequest true "Move request"
+// @Success 200 {object} utils.APIResponse "File moved successfully"
+// @Failure 400 {object} utils.APIResponse "Invalid request"
+// @Failure 401 {object} utils.APIResponse "Unauthorized"
+// @Failure 403 {object} utils.APIResponse "Forbidden - Only owner can move file"
+// @Failure 404 {object} utils.APIResponse "File not found or destination folder not found"
+// @Router /files/{id}/move [post]
+func (fc *FileController) MoveFile(c *gin.Context) {
+	user, exists := middleware.GetUserFromContext(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not found in context")
+		return
+	}
+
+	fileID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid file ID")
+		return
+	}
+
+	var req models.FileMoveRequest
+	if !utils.BindAndValidate(c, &req) {
+		return
+	}
+
+	// Get the file and ensure user owns it
+	var file models.File
+	if err := database.GetDB().Where("id = ? AND user_id = ?", fileID, user.ID).First(&file).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusNotFound, "File not found")
+		return
+	}
+	// Ensure file not in trash
+	if file.IsTrashed {
+		utils.ErrorResponse(c, http.StatusBadRequest, "File is in trash")
+		return
+	}
+	
+	// Check if destination folder exists and user has access (if specified)
+	if req.FolderID != nil {
+		var destFolder models.Folder
+		if err := database.GetDB().Where("id = ? AND user_id = ?", *req.FolderID, user.ID).First(&destFolder).Error; err != nil {
+			utils.ErrorResponse(c, http.StatusNotFound, "Destination folder not found or access denied")
+			return
+		}
+	}
+
+	// Check if file with same name already exists in destination
+	var existingFile models.File
+	query := database.GetDB().Where("user_id = ? AND original_name = ? AND id != ?", user.ID, file.OriginalName, file.ID)
+	if req.FolderID != nil {
+		query = query.Where("folder_id = ?", *req.FolderID)
+	} else {
+		query = query.Where("folder_id IS NULL")
+	}
+
+	if err := query.First(&existingFile).Error; err == nil {
+		utils.ErrorResponse(c, http.StatusConflict, "File with this name already exists in destination")
+		return
+	}
+
+	// Update the file's folder
+	file.FolderID = req.FolderID
+
+	if err := database.GetDB().Save(&file).Error; err != nil {
+		appLogger.Error("Failed to move file", "error", err, "file_id", file.ID)
+		utils.InternalServerErrorResponse(c, "Failed to move file")
+		return
+	}
+
+	// Log the move event
+	fc.auditService.LogEvent(&user.ID, models.ActionFileMove, models.ResourceFile, &file.ID,
+		fmt.Sprintf("File moved: %s", file.OriginalName), c.ClientIP(), c.GetHeader("User-Agent"), models.StatusSuccess)
+
+	utils.SuccessResponse(c, http.StatusOK, "File moved successfully", file.ToResponse())
+}

@@ -73,7 +73,7 @@ export const filesApi = api.injectEndpoints({
             { id: string; folder_id?: string }
         >({
             query: ({ id, folder_id }) => ({
-                url: `${API_ENDPOINTS.FILES.MOVE}${id}`,
+                url: `/files/${id}/move`,
                 method: "POST",
                 body: { folder_id },
             }),
