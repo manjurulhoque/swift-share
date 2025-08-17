@@ -1059,7 +1059,7 @@ func (fc *FileController) MoveFile(c *gin.Context) {
 		utils.ErrorResponse(c, http.StatusBadRequest, "File is in trash")
 		return
 	}
-	
+
 	// Check if destination folder exists and user has access (if specified)
 	if req.FolderID != nil {
 		var destFolder models.Folder

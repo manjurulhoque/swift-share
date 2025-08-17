@@ -43,7 +43,7 @@ export const trashApi = api.injectEndpoints({
             { page?: number; limit?: number }
         >({
             query: ({ page = 1, limit = 20 }) => ({
-                url: `/trash?page=${page}&limit=${limit}`,
+                url: `/trash/?page=${page}&limit=${limit}`,
             }),
             providesTags: ["Files"],
         }),
