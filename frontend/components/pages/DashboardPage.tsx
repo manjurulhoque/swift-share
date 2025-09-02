@@ -15,51 +15,75 @@ import {
     Filter,
 } from "lucide-react";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { useGetDashboardStatsQuery } from "@/store/api/authApi";
+import { useGetFilesQuery } from "@/store/api/filesApi";
+import { useGetRecentFilesQuery } from "@/store/api/filesApi";
 
 export default function DashboardPage() {
     const [searchTerm, setSearchTerm] = useState("");
 
-    const mockFiles = [
-        {
-            id: 1,
-            name: "Project Proposal.pdf",
-            size: "2.4 MB",
-            type: "PDF",
-            uploadDate: "2024-01-15",
-            shared: true,
-        },
-        {
-            id: 2,
-            name: "Design Assets.zip",
-            size: "15.8 MB",
-            type: "ZIP",
-            uploadDate: "2024-01-14",
-            shared: false,
-        },
-        {
-            id: 3,
-            name: "Meeting Notes.docx",
-            size: "156 KB",
-            type: "DOCX",
-            uploadDate: "2024-01-13",
-            shared: true,
-        },
-        {
-            id: 4,
-            name: "Screenshots",
-            size: "8.2 MB",
-            type: "Folder",
-            uploadDate: "2024-01-12",
-            shared: false,
-        },
-    ];
+    // Fetch dashboard statistics
+    const {
+        data: statsData,
+        isLoading: statsLoading,
+        error: statsError,
+    } = useGetDashboardStatsQuery();
 
-    const stats = [
-        { title: "Total Files", value: "24", icon: File },
-        { title: "Storage Used", value: "2.8 GB", icon: Folder },
-        { title: "Shared Files", value: "12", icon: Share },
-        { title: "Downloads", value: "156", icon: Download },
-    ];
+    // Fetch recent files
+    const { data: recentFilesData, isLoading: recentFilesLoading } =
+        useGetRecentFilesQuery({ limit: 10 });
+
+    // Fetch files for search
+    const { data: filesData, isLoading: filesLoading } = useGetFilesQuery({
+        page: 1,
+        limit: 10,
+        search: searchTerm || undefined,
+    });
+
+    // Format file size helper
+    const formatFileSize = (bytes: number): string => {
+        if (bytes === 0) return "0 B";
+        const k = 1024;
+        const sizes = ["B", "KB", "MB", "GB", "TB"];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+    };
+
+    // Get files to display (recent files or search results)
+    const displayFiles = searchTerm
+        ? filesData?.data?.files || []
+        : recentFilesData?.data?.recent_files || [];
+
+    // Prepare stats data
+    const stats = statsData?.data
+        ? [
+              {
+                  title: "Total Files",
+                  value: statsData.data.total_files.toString(),
+                  icon: File,
+              },
+              {
+                  title: "Storage Used",
+                  value: formatFileSize(statsData.data.storage_used),
+                  icon: Folder,
+              },
+              {
+                  title: "Shared Files",
+                  value: statsData.data.shared_files.toString(),
+                  icon: Share,
+              },
+              {
+                  title: "Downloads",
+                  value: statsData.data.total_downloads.toString(),
+                  icon: Download,
+              },
+          ]
+        : [
+              { title: "Total Files", value: "0", icon: File },
+              { title: "Storage Used", value: "0 B", icon: Folder },
+              { title: "Shared Files", value: "0", icon: Share },
+              { title: "Downloads", value: "0", icon: Download },
+          ];
 
     return (
         <SidebarInset>
@@ -83,23 +107,37 @@ export default function DashboardPage() {
 
                         {/* Stats Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                            {stats.map((stat, index) => (
-                                <Card key={index}>
-                                    <CardContent className="p-6">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-600">
-                                                    {stat.title}
-                                                </p>
-                                                <p className="text-2xl font-bold text-gray-900">
-                                                    {stat.value}
-                                                </p>
-                                            </div>
-                                            <stat.icon className="h-8 w-8 text-blue-600" />
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
+                            {statsLoading
+                                ? [...Array(4)].map((_, index) => (
+                                      <Card key={index}>
+                                          <CardContent className="p-6">
+                                              <div className="flex items-center justify-between">
+                                                  <div className="flex-1">
+                                                      <div className="h-4 w-20 bg-gray-200 rounded mb-2 animate-pulse"></div>
+                                                      <div className="h-8 w-16 bg-gray-200 rounded animate-pulse"></div>
+                                                  </div>
+                                                  <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+                                              </div>
+                                          </CardContent>
+                                      </Card>
+                                  ))
+                                : stats.map((stat, index) => (
+                                      <Card key={index}>
+                                          <CardContent className="p-6">
+                                              <div className="flex items-center justify-between">
+                                                  <div>
+                                                      <p className="text-sm font-medium text-gray-600">
+                                                          {stat.title}
+                                                      </p>
+                                                      <p className="text-2xl font-bold text-gray-900">
+                                                          {stat.value}
+                                                      </p>
+                                                  </div>
+                                                  <stat.icon className="h-8 w-8 text-blue-600" />
+                                              </div>
+                                          </CardContent>
+                                      </Card>
+                                  ))}
                         </div>
 
                         {/* Upload Section */}
@@ -148,56 +186,98 @@ export default function DashboardPage() {
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <div className="space-y-2">
-                                    {mockFiles.map((file) => (
-                                        <div
-                                            key={file.id}
-                                            className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-                                        >
-                                            <div className="flex items-center space-x-3">
-                                                {file.type === "Folder" ? (
-                                                    <Folder className="h-6 w-6 text-blue-500" />
-                                                ) : (
-                                                    <File className="h-6 w-6 text-gray-500" />
-                                                )}
-                                                <div>
-                                                    <h3 className="font-medium text-gray-900">
-                                                        {file.name}
-                                                    </h3>
-                                                    <p className="text-sm text-gray-500">
-                                                        {file.size} •{" "}
-                                                        {file.uploadDate}
-                                                    </p>
+                                {statsLoading ||
+                                recentFilesLoading ||
+                                filesLoading ? (
+                                    <div className="space-y-2">
+                                        {[...Array(4)].map((_, i) => (
+                                            <div
+                                                key={i}
+                                                className="flex items-center justify-between p-4 border rounded-lg animate-pulse"
+                                            >
+                                                <div className="flex items-center space-x-3">
+                                                    <div className="h-6 w-6 bg-gray-200 rounded"></div>
+                                                    <div>
+                                                        <div className="h-4 w-32 bg-gray-200 rounded mb-2"></div>
+                                                        <div className="h-3 w-24 bg-gray-200 rounded"></div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center space-x-2">
+                                                    <div className="h-8 w-8 bg-gray-200 rounded"></div>
+                                                    <div className="h-8 w-8 bg-gray-200 rounded"></div>
+                                                    <div className="h-8 w-8 bg-gray-200 rounded"></div>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center space-x-2">
-                                                {file.shared && (
-                                                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                                                        Shared
-                                                    </span>
-                                                )}
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                >
-                                                    <Share className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                >
-                                                    <Download className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                >
-                                                    <Trash className="h-4 w-4" />
-                                                </Button>
+                                        ))}
+                                    </div>
+                                ) : displayFiles.length > 0 ? (
+                                    <div className="space-y-2">
+                                        {displayFiles.map((file: any) => (
+                                            <div
+                                                key={file.id}
+                                                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                                            >
+                                                <div className="flex items-center space-x-3">
+                                                    <File className="h-6 w-6 text-gray-500" />
+                                                    <div>
+                                                        <h3 className="font-medium text-gray-900">
+                                                            {file.original_name ||
+                                                                file.file
+                                                                    ?.original_name}
+                                                        </h3>
+                                                        <p className="text-sm text-gray-500">
+                                                            {formatFileSize(
+                                                                file.file_size ||
+                                                                    file.file
+                                                                        ?.file_size ||
+                                                                    0
+                                                            )}{" "}
+                                                            •{" "}
+                                                            {new Date(
+                                                                file.created_at ||
+                                                                    file.file
+                                                                        ?.created_at
+                                                            ).toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center space-x-2">
+                                                    {(file.is_public ||
+                                                        file.file
+                                                            ?.is_public) && (
+                                                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                                                            Shared
+                                                        </span>
+                                                    )}
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                    >
+                                                        <Share className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                    >
+                                                        <Download className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                    >
+                                                        <Trash className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-8 text-gray-500">
+                                        {searchTerm
+                                            ? "No files found matching your search."
+                                            : "No recent files to display."}
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </div>

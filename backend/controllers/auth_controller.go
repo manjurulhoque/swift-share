@@ -325,7 +325,7 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 
 	response := gin.H{
 		"tokens": gin.H{
-			"access_token": accessToken,
+			"access_token":  accessToken,
 			"refresh_token": refreshToken,
 		},
 	}
@@ -335,4 +335,57 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 		"Access token refreshed", c.ClientIP(), c.GetHeader("User-Agent"), models.StatusSuccess)
 
 	utils.SuccessResponse(c, http.StatusOK, "Token refreshed successfully", response)
+}
+
+// GetDashboardStats godoc
+// @Summary Get user dashboard statistics
+// @Description Get statistics for the user's dashboard including file counts, storage usage, and sharing stats
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} utils.APIResponse "Dashboard statistics retrieved successfully"
+// @Failure 401 {object} utils.APIResponse "Unauthorized"
+// @Router /auth/dashboard-stats [get]
+func (ac *AuthController) GetDashboardStats(c *gin.Context) {
+	user, exists := middleware.GetUserFromContext(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not found in context")
+		return
+	}
+
+	var stats struct {
+		TotalFiles     int64 `json:"total_files"`
+		StorageUsed    int64 `json:"storage_used"`
+		SharedFiles    int64 `json:"shared_files"`
+		TotalDownloads int64 `json:"total_downloads"`
+	}
+
+	// Count total files (excluding trashed)
+	database.GetDB().Model(&models.File{}).
+		Where("user_id = ? AND is_trashed = false", user.ID).
+		Count(&stats.TotalFiles)
+
+	// Calculate total storage used (excluding trashed)
+	database.GetDB().Model(&models.File{}).
+		Where("user_id = ? AND is_trashed = false", user.ID).
+		Select("COALESCE(SUM(file_size), 0)").
+		Scan(&stats.StorageUsed)
+
+	// Count shared files (files with collaborators or public files)
+	var sharedCount int64
+	database.GetDB().Model(&models.File{}).
+		Joins("LEFT JOIN collaborators ON files.id = collaborators.file_id").
+		Where("files.user_id = ? AND files.is_trashed = false AND (files.is_public = true OR collaborators.id IS NOT NULL)", user.ID).
+		Distinct("files.id").
+		Count(&sharedCount)
+	stats.SharedFiles = sharedCount
+
+	// Calculate total downloads
+	database.GetDB().Model(&models.File{}).
+		Where("user_id = ? AND is_trashed = false", user.ID).
+		Select("COALESCE(SUM(download_count), 0)").
+		Scan(&stats.TotalDownloads)
+
+	utils.SuccessResponse(c, http.StatusOK, "Dashboard statistics retrieved successfully", stats)
 }

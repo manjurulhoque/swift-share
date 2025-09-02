@@ -33,6 +33,12 @@ async function refreshAccessToken(token: JWT) {
             throw refreshedTokens;
         }
 
+        if (!refreshedTokens.success) {
+            return {
+                error: "RefreshAccessTokenError",
+            };
+        }
+
         return {
             accessToken: refreshedTokens.data?.tokens.access_token ?? "",
             refreshToken: refreshedTokens.data?.tokens.refresh_token ?? "",

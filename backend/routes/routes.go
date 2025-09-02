@@ -43,6 +43,7 @@ func SetupRoutes(router *gin.Engine) {
 				authProtected.GET("/profile", authController.GetProfile)
 				authProtected.PUT("/profile", authController.UpdateProfile)
 				authProtected.POST("/logout", authController.Logout)
+				authProtected.GET("/dashboard-stats", authController.GetDashboardStats)
 			}
 
 			// File management routes

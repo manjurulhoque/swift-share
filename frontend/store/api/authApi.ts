@@ -8,6 +8,13 @@ import type {
     ProfileResponse,
 } from "@/types/auth";
 
+export interface DashboardStats {
+    total_files: number;
+    storage_used: number;
+    shared_files: number;
+    total_downloads: number;
+}
+
 export const authApi = api.injectEndpoints({
     endpoints: (builder) => ({
         login: builder.mutation<AuthResponse, LoginRequest>({
@@ -115,6 +122,14 @@ export const authApi = api.injectEndpoints({
                 body: passwordData,
             }),
         }),
+
+        getDashboardStats: builder.query<
+            { success: boolean; message: string; data: DashboardStats },
+            void
+        >({
+            query: () => "/auth/dashboard-stats",
+            providesTags: ["Dashboard"],
+        }),
     }),
 });
 
@@ -125,4 +140,5 @@ export const {
     useGetProfileQuery,
     useUpdateProfileMutation,
     useChangePasswordMutation,
+    useGetDashboardStatsQuery,
 } = authApi;
