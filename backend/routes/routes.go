@@ -56,6 +56,7 @@ func SetupRoutes(router *gin.Engine) {
 			files := protected.Group("/files")
 			{
 				files.GET("/", fileController.GetFiles)
+				files.GET("/shared-with-me", fileController.GetSharedWithMeFiles)
 				files.GET("/recent", fileController.GetRecentFiles)
 				files.POST("/upload", fileController.UploadFile)
 				files.POST("/upload-multiple", fileController.UploadMultipleFiles)
@@ -79,6 +80,7 @@ func SetupRoutes(router *gin.Engine) {
 			folders := protected.Group("/folders")
 			{
 				folders.GET("/", folderController.GetFolders)
+				folders.GET("/shared-with-me", folderController.GetSharedWithMeFolders)
 				folders.POST("/", folderController.CreateFolder)
 				folders.GET("/:id", folderController.GetFolder)
 				folders.PUT("/:id", folderController.UpdateFolder)

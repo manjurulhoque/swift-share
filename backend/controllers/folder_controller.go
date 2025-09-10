@@ -238,6 +238,108 @@ func (fc *FolderController) GetFolders(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Directory contents retrieved successfully", response)
 }
 
+// GetSharedWithMeFolders godoc
+// @Summary Get folders shared with me
+// @Description Get folders that have been shared with the current user as a collaborator
+// @Tags folders
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param page query int false "Page number (default: 1)"
+// @Param limit query int false "Number of folders per page (default: 10, max: 100)"
+// @Param search query string false "Search term for folder names"
+// @Success 200 {object} utils.APIResponse "Shared folders retrieved successfully"
+// @Failure 401 {object} utils.APIResponse "Unauthorized"
+// @Router /folders/shared-with-me [get]
+func (fc *FolderController) GetSharedWithMeFolders(c *gin.Context) {
+	user, exists := middleware.GetUserFromContext(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not found in context")
+		return
+	}
+
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	search := c.Query("search")
+
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 10
+	}
+
+	// Get folders where user is a collaborator (not the owner)
+	query := database.GetDB().Model(&models.Folder{}).
+		Joins("LEFT JOIN collaborators ON folders.id = collaborators.folder_id").
+		Where("collaborators.user_id = ? AND folders.is_trashed = false", user.ID)
+
+	if search != "" {
+		query = query.Where("name LIKE ? OR description LIKE ?", "%"+search+"%", "%"+search+"%")
+	}
+
+	var total int64
+	countQuery := database.GetDB().Model(&models.Folder{}).
+		Joins("LEFT JOIN collaborators ON folders.id = collaborators.folder_id").
+		Where("collaborators.user_id = ? AND folders.is_trashed = false", user.ID)
+
+	if search != "" {
+		countQuery = countQuery.Where("name LIKE ? OR description LIKE ?", "%"+search+"%", "%"+search+"%")
+	}
+
+	countQuery.Distinct("folders.id").Count(&total)
+
+	var folders []models.Folder
+	offset := (page - 1) * limit
+
+	// Get distinct folders with proper ordering
+	subquery := database.GetDB().Model(&models.Folder{}).
+		Select("DISTINCT folders.id, folders.created_at").
+		Joins("LEFT JOIN collaborators ON folders.id = collaborators.folder_id").
+		Where("collaborators.user_id = ? AND folders.is_trashed = false", user.ID)
+
+	if search != "" {
+		subquery = subquery.Where("name LIKE ? OR description LIKE ?", "%"+search+"%", "%"+search+"%")
+	}
+
+	subquery = subquery.Order("folders.created_at DESC").Offset(offset).Limit(limit)
+
+	// Get the actual folders using the subquery
+	if err := database.GetDB().Model(&models.Folder{}).
+		Preload("User").
+		Where("folders.id IN (?)", subquery).
+		Order("folders.created_at DESC").
+		Find(&folders).Error; err != nil {
+		utils.InternalServerErrorResponse(c, "Failed to retrieve shared folders")
+		return
+	}
+
+	var responses []models.FolderResponse
+	for _, folder := range folders {
+		// Get counts for each folder
+		var fileCount, subfolderCount int64
+		database.GetDB().Model(&models.File{}).Where("folder_id = ?", folder.ID).Count(&fileCount)
+		database.GetDB().Model(&models.Folder{}).Where("parent_id = ?", folder.ID).Count(&subfolderCount)
+
+		response := folder.ToResponse()
+		response.FileCount = fileCount
+		response.SubfolderCount = subfolderCount
+		responses = append(responses, response)
+	}
+
+	response := gin.H{
+		"folders": responses,
+		"pagination": gin.H{
+			"page":        page,
+			"limit":       limit,
+			"total":       total,
+			"total_pages": (int(total) + limit - 1) / limit,
+		},
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, "Shared folders retrieved successfully", response)
+}
+
 // GetFolder godoc
 // @Summary Get a specific folder
 // @Description Get detailed information about a specific folder

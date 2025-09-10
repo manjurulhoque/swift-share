@@ -30,6 +30,7 @@ import {
     ChevronDown,
     Clock,
     Trash2,
+    Users,
 } from "lucide-react";
 import {
     DropdownMenu,
@@ -66,6 +67,11 @@ const menuItems = [
         title: "Shared Links",
         url: "/dashboard/shared",
         icon: Share,
+    },
+    {
+        title: "Shared with Me",
+        url: "/dashboard/shared-with-me",
+        icon: Users,
     },
     {
         title: "Transfer History",

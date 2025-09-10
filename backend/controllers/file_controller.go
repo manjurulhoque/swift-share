@@ -579,6 +579,100 @@ func (fc *FileController) GetFiles(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Files retrieved successfully", response)
 }
 
+// GetSharedWithMeFiles godoc
+// @Summary Get files shared with me
+// @Description Get files that have been shared with the current user as a collaborator
+// @Tags files
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param page query int false "Page number (default: 1)"
+// @Param limit query int false "Number of files per page (default: 10, max: 100)"
+// @Param search query string false "Search term for file names"
+// @Success 200 {object} utils.APIResponse "Shared files retrieved successfully"
+// @Failure 401 {object} utils.APIResponse "Unauthorized"
+// @Router /files/shared-with-me [get]
+func (fc *FileController) GetSharedWithMeFiles(c *gin.Context) {
+	user, exists := middleware.GetUserFromContext(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not found in context")
+		return
+	}
+
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	search := c.Query("search")
+
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 10
+	}
+
+	// Get files where user is a collaborator (not the owner)
+	query := database.GetDB().Model(&models.File{}).
+		Joins("LEFT JOIN collaborators ON files.id = collaborators.file_id").
+		Where("collaborators.user_id = ? AND files.is_trashed = false", user.ID)
+
+	if search != "" {
+		query = query.Where("original_name LIKE ? OR description LIKE ?", "%"+search+"%", "%"+search+"%")
+	}
+
+	var total int64
+	countQuery := database.GetDB().Model(&models.File{}).
+		Joins("LEFT JOIN collaborators ON files.id = collaborators.file_id").
+		Where("collaborators.user_id = ? AND files.is_trashed = false", user.ID)
+
+	if search != "" {
+		countQuery = countQuery.Where("original_name LIKE ? OR description LIKE ?", "%"+search+"%", "%"+search+"%")
+	}
+
+	countQuery.Distinct("files.id").Count(&total)
+
+	var files []models.File
+	offset := (page - 1) * limit
+
+	// Get distinct files with proper ordering
+	subquery := database.GetDB().Model(&models.File{}).
+		Select("DISTINCT files.id, files.created_at").
+		Joins("LEFT JOIN collaborators ON files.id = collaborators.file_id").
+		Where("collaborators.user_id = ? AND files.is_trashed = false", user.ID)
+
+	if search != "" {
+		subquery = subquery.Where("original_name LIKE ? OR description LIKE ?", "%"+search+"%", "%"+search+"%")
+	}
+
+	subquery = subquery.Order("files.created_at DESC").Offset(offset).Limit(limit)
+
+	// Get the actual files using the subquery
+	if err := database.GetDB().Model(&models.File{}).
+		Preload("User").
+		Where("files.id IN (?)", subquery).
+		Order("files.created_at DESC").
+		Find(&files).Error; err != nil {
+		utils.InternalServerErrorResponse(c, "Failed to retrieve shared files")
+		return
+	}
+
+	var responses []models.FileResponse
+	for _, file := range files {
+		responses = append(responses, file.ToResponse())
+	}
+
+	response := gin.H{
+		"files": responses,
+		"pagination": gin.H{
+			"page":        page,
+			"limit":       limit,
+			"total":       total,
+			"total_pages": (int(total) + limit - 1) / limit,
+		},
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, "Shared files retrieved successfully", response)
+}
+
 // GetFile godoc
 // @Summary Get a specific file
 // @Description Get detailed information about a specific file

@@ -110,6 +110,26 @@ export const filesApi = api.injectEndpoints({
             providesTags: ["Files"],
         }),
 
+        getSharedWithMeFiles: builder.query<
+            ApiResponse<{
+                files: File[];
+                pagination: {
+                    page: number;
+                    limit: number;
+                    total: number;
+                    total_pages: number;
+                };
+            }>,
+            { page?: number; limit?: number; search?: string }
+        >({
+            query: ({ page = 1, limit = 10, search }) => ({
+                url: `/files/shared-with-me?page=${page}&limit=${limit}${
+                    search ? `&search=${encodeURIComponent(search)}` : ""
+                }`,
+            }),
+            providesTags: ["Files"],
+        }),
+
         getFileAccessHistory: builder.query<
             ApiResponse<{ access_history: any[]; total: number; file: any }>,
             { id: string; limit?: number }
@@ -132,5 +152,6 @@ export const {
     useDeleteFileMutation,
     useGetPresignedDownloadUrlMutation,
     useGetRecentFilesQuery,
+    useGetSharedWithMeFilesQuery,
     useGetFileAccessHistoryQuery,
 } = filesApi;

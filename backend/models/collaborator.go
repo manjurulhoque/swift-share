@@ -47,7 +47,7 @@ func (c *Collaborator) IsExpired() bool {
 }
 
 func (c *Collaborator) TableName() string {
-	return "file_permissions"
+	return "collaborators"
 }
 
 type CollaboratorResponse struct {

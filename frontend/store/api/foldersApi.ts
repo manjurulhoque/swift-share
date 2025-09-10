@@ -85,6 +85,33 @@ export const foldersApi = api.injectEndpoints({
             providesTags: (result, error, id) => [{ type: "Files", id }],
         }),
 
+        // Get folders shared with me
+        getSharedWithMeFolders: builder.query<
+            ApiResponse<{
+                folders: Folder[];
+                pagination: {
+                    page: number;
+                    limit: number;
+                    total: number;
+                    total_pages: number;
+                };
+            }>,
+            { page?: number; limit?: number; search?: string }
+        >({
+            query: ({ page = 1, limit = 10, search }) => {
+                const params = new URLSearchParams({
+                    page: page.toString(),
+                    limit: limit.toString(),
+                });
+                if (search) params.append("search", search);
+
+                return `${
+                    API_ENDPOINTS.FOLDERS.BASE
+                }shared-with-me?${params.toString()}`;
+            },
+            providesTags: ["Files"],
+        }),
+
         // Create folder
         createFolder: builder.mutation<
             ApiResponse<Folder>,
@@ -141,6 +168,7 @@ export const foldersApi = api.injectEndpoints({
 export const {
     useGetFolderContentsQuery,
     useGetFolderQuery,
+    useGetSharedWithMeFoldersQuery,
     useCreateFolderMutation,
     useUpdateFolderMutation,
     useMoveFolderMutation,
