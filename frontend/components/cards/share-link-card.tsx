@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { File as FileIcon, Copy, Edit, Trash2 } from "lucide-react";
-import { ShareLink } from "@/types/share";
+import { ShareLink } from "@/store/api/shareApi";
 
 interface ShareLinkCardProps {
     share: ShareLink;
@@ -29,7 +29,9 @@ export function ShareLinkCard({
         });
     };
 
-    const formatExpiryDate = (dateString: string | null): string => {
+    const formatExpiryDate = (
+        dateString: string | null | undefined
+    ): string => {
         if (!dateString) return "Never";
         const date = new Date(dateString);
         return date.toLocaleDateString("en-US", {
@@ -67,44 +69,45 @@ export function ShareLinkCard({
                             </p>
                         </div>
                     </div>
-                    <Badge
-                        variant={share.is_active ? "default" : "secondary"}
-                        className="text-xs"
-                    >
-                        {share.is_active ? "Active" : "Inactive"}
+                    <Badge variant="default" className="text-xs">
+                        Active
                     </Badge>
                 </div>
             </CardHeader>
             <CardContent className="pt-0">
                 <div className="space-y-3">
-                    <p className="text-sm text-gray-600 line-clamp-2">
-                        {share.description || "No description"}
-                    </p>
                     <div className="flex items-center justify-between text-xs text-gray-500">
                         <div className="flex items-center space-x-4">
                             <span>{formatDate(share.created_at)}</span>
                             <span>{share.download_count} downloads</span>
+                            <span>{share.view_count} views</span>
                         </div>
                     </div>
                     <div className="space-y-2 text-xs text-gray-500">
                         <div className="flex justify-between">
+                            <span>Permission:</span>
+                            <span className="capitalize">
+                                {share.permission}
+                            </span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span>Downloads:</span>
+                            <span>
+                                {share.allow_download
+                                    ? "Allowed"
+                                    : "Not allowed"}
+                            </span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span>Password:</span>
+                            <span>
+                                {share.has_password ? "Protected" : "None"}
+                            </span>
+                        </div>
+                        <div className="flex justify-between">
                             <span>Expires:</span>
                             <span>{formatExpiryDate(share.expires_at)}</span>
                         </div>
-                        <div className="flex justify-between">
-                            <span>Max Downloads:</span>
-                            <span>
-                                {share.max_downloads === 0
-                                    ? "Unlimited"
-                                    : share.max_downloads}
-                            </span>
-                        </div>
-                        {share.has_password && (
-                            <div className="flex justify-between">
-                                <span>Password:</span>
-                                <span>Protected</span>
-                            </div>
-                        )}
                     </div>
                     <div className="flex items-center justify-between pt-2">
                         <div className="flex items-center space-x-2">

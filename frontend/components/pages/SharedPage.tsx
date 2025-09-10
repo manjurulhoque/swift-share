@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { useGetSharesQuery } from "@/store/api/sharesApi";
+import { useGetShareLinksQuery } from "@/store/api/shareApi";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Share2, Search, Filter } from "lucide-react";
-import { ShareLink } from "@/types/share";
+import { ShareLink } from "@/store/api/shareApi";
 import { redirect, RedirectType } from "next/navigation";
 import { SidebarInset, SidebarTrigger } from "../ui/sidebar";
 import { ShareLinkCard } from "@/components/cards/share-link-card";
@@ -44,14 +44,19 @@ export default function SharedPage() {
         isLoading,
         error,
         refetch,
-    } = useGetSharesQuery({
+    } = useGetShareLinksQuery({
         page: currentPage,
         limit: 10,
-        search: searchTerm,
     });
 
     const shares = sharesData?.data?.share_links || [];
-    const pagination = sharesData?.data?.pagination || null;
+    const pagination = sharesData?.data
+        ? {
+              total: sharesData.data.total,
+              total_pages: sharesData.data.total_pages,
+              current_page: sharesData.data.current_page,
+          }
+        : null;
 
     const handleSearch = useCallback((value: string) => {
         setSearchTerm(value);
@@ -65,10 +70,10 @@ export default function SharedPage() {
     const handleEdit = (share: ShareLink) => {
         setSelectedShare(share);
         setEditForm({
-            description: share.description || "",
+            description: "",
             password: "",
-            max_downloads: share.max_downloads,
-            is_active: share.is_active,
+            max_downloads: 0,
+            is_active: true,
         });
         setIsEditDialogOpen(true);
     };
