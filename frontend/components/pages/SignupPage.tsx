@@ -12,7 +12,7 @@ import {
     CardTitle,
     CardDescription,
 } from "@/components/ui/card";
-import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, User, Share } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -60,32 +60,91 @@ export default function SignupPage() {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-            <Card className="w-full max-w-md">
-                <CardHeader className="text-center">
-                    <CardTitle className="text-2xl font-bold">
-                        Create your account
-                    </CardTitle>
-                    <CardDescription>
-                        Join CloudShare and start sharing files securely
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
+            <div className="w-full max-w-md">
+                {/* Logo */}
+                <div className="text-center mb-8">
+                    <Link
+                        href="/"
+                        className="inline-flex items-center space-x-2 hover:opacity-80 transition-opacity"
+                    >
+                        <Share className="h-10 w-10 text-blue-600" />
+                        <span className="text-2xl font-bold text-gray-900">
+                            SwiftShare
+                        </span>
+                    </Link>
+                </div>
+
+                <Card className="w-full">
+                    <CardHeader className="text-center">
+                        <CardTitle className="text-2xl font-bold">
+                            Create your account
+                        </CardTitle>
+                        <CardDescription>
+                            Join SwiftShare and start sharing files securely
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="first_name">
+                                        First Name
+                                    </Label>
+                                    <div className="relative">
+                                        <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                        <Input
+                                            id="first_name"
+                                            type="text"
+                                            placeholder="First name"
+                                            className="pl-10"
+                                            value={formData.first_name}
+                                            onChange={(e) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    first_name: e.target.value,
+                                                })
+                                            }
+                                            required
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="last_name">Last Name</Label>
+                                    <div className="relative">
+                                        <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                        <Input
+                                            id="last_name"
+                                            type="text"
+                                            placeholder="Last name"
+                                            className="pl-10"
+                                            value={formData.last_name}
+                                            onChange={(e) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    last_name: e.target.value,
+                                                })
+                                            }
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="space-y-2">
-                                <Label htmlFor="first_name">First Name</Label>
+                                <Label htmlFor="email">Email address</Label>
                                 <div className="relative">
-                                    <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                    <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                                     <Input
-                                        id="first_name"
-                                        type="text"
-                                        placeholder="First name"
+                                        id="email"
+                                        type="email"
+                                        placeholder="Enter your email"
                                         className="pl-10"
-                                        value={formData.first_name}
+                                        value={formData.email}
                                         onChange={(e) =>
                                             setFormData({
                                                 ...formData,
-                                                first_name: e.target.value,
+                                                email: e.target.value,
                                             })
                                         }
                                         required
@@ -94,106 +153,66 @@ export default function SignupPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="last_name">Last Name</Label>
+                                <Label htmlFor="password">Password</Label>
                                 <div className="relative">
-                                    <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                    <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                                     <Input
-                                        id="last_name"
-                                        type="text"
-                                        placeholder="Last name"
-                                        className="pl-10"
-                                        value={formData.last_name}
+                                        id="password"
+                                        type={
+                                            showPassword ? "text" : "password"
+                                        }
+                                        placeholder="Create a password"
+                                        className="pl-10 pr-10"
+                                        value={formData.password}
                                         onChange={(e) =>
                                             setFormData({
                                                 ...formData,
-                                                last_name: e.target.value,
+                                                password: e.target.value,
                                             })
                                         }
                                         required
                                     />
+                                    <button
+                                        type="button"
+                                        className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                                        onClick={() =>
+                                            setShowPassword(!showPassword)
+                                        }
+                                    >
+                                        {showPassword ? (
+                                            <EyeOff className="h-4 w-4" />
+                                        ) : (
+                                            <Eye className="h-4 w-4" />
+                                        )}
+                                    </button>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="email">Email address</Label>
-                            <div className="relative">
-                                <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    placeholder="Enter your email"
-                                    className="pl-10"
-                                    value={formData.email}
-                                    onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            email: e.target.value,
-                                        })
-                                    }
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="password">Password</Label>
-                            <div className="relative">
-                                <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                <Input
-                                    id="password"
-                                    type={showPassword ? "text" : "password"}
-                                    placeholder="Create a password"
-                                    className="pl-10 pr-10"
-                                    value={formData.password}
-                                    onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            password: e.target.value,
-                                        })
-                                    }
-                                    required
-                                />
-                                <button
-                                    type="button"
-                                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
-                                    onClick={() =>
-                                        setShowPassword(!showPassword)
-                                    }
-                                >
-                                    {showPassword ? (
-                                        <EyeOff className="h-4 w-4" />
-                                    ) : (
-                                        <Eye className="h-4 w-4" />
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-
-                        <Button
-                            type="submit"
-                            className="w-full"
-                            disabled={isLoading}
-                        >
-                            {isLoading
-                                ? "Creating account..."
-                                : "Create account"}
-                        </Button>
-                    </form>
-
-                    <div className="mt-6 text-center">
-                        <p className="text-sm text-gray-600">
-                            Already have an account?{" "}
-                            <Link
-                                href="/login"
-                                className="font-medium text-blue-600 hover:text-blue-500"
+                            <Button
+                                type="submit"
+                                className="w-full"
+                                disabled={isLoading}
                             >
-                                Sign in
-                            </Link>
-                        </p>
-                    </div>
-                </CardContent>
-            </Card>
+                                {isLoading
+                                    ? "Creating account..."
+                                    : "Create account"}
+                            </Button>
+                        </form>
+
+                        <div className="mt-6 text-center">
+                            <p className="text-sm text-gray-600">
+                                Already have an account?{" "}
+                                <Link
+                                    href="/login"
+                                    className="font-medium text-blue-600 hover:text-blue-500"
+                                >
+                                    Sign in
+                                </Link>
+                            </p>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     );
 }

@@ -56,6 +56,7 @@ export function useAuth() {
         session,
         status,
         isLoading,
+        isActionLoading,
         isAuthenticated,
         isAdmin,
         isActive,
