@@ -633,9 +633,9 @@ func (fc *FileController) GetSharedWithMeFiles(c *gin.Context) {
 	var files []models.File
 	offset := (page - 1) * limit
 
-	// Get distinct files with proper ordering
+	// Get distinct file IDs with proper ordering using window function
 	subquery := database.GetDB().Model(&models.File{}).
-		Select("DISTINCT files.id, files.created_at").
+		Select("files.id, ROW_NUMBER() OVER (ORDER BY files.created_at DESC) as rn").
 		Joins("LEFT JOIN collaborators ON files.id = collaborators.file_id").
 		Where("collaborators.user_id = ? AND files.is_trashed = false", user.ID)
 
@@ -643,12 +643,40 @@ func (fc *FileController) GetSharedWithMeFiles(c *gin.Context) {
 		subquery = subquery.Where("original_name LIKE ? OR description LIKE ?", "%"+search+"%", "%"+search+"%")
 	}
 
-	subquery = subquery.Order("files.created_at DESC").Offset(offset).Limit(limit)
+	// Create a subquery to get the IDs with row numbers, then filter by row number for pagination
+	fileIDsQuery := database.GetDB().Raw(`
+		SELECT id FROM (
+			SELECT DISTINCT files.id, ROW_NUMBER() OVER (ORDER BY files.created_at DESC) as rn
+			FROM files 
+			LEFT JOIN collaborators ON files.id = collaborators.file_id 
+			WHERE collaborators.user_id = ? AND files.is_trashed = false AND files.deleted_at IS NULL
+		) ranked_files 
+		WHERE rn > ? AND rn <= ?
+	`, user.ID, offset, offset+limit)
 
-	// Get the actual files using the subquery
+	if search != "" {
+		fileIDsQuery = database.GetDB().Raw(`
+			SELECT id FROM (
+				SELECT DISTINCT files.id, ROW_NUMBER() OVER (ORDER BY files.created_at DESC) as rn
+				FROM files 
+				LEFT JOIN collaborators ON files.id = collaborators.file_id 
+				WHERE collaborators.user_id = ? AND files.is_trashed = false AND files.deleted_at IS NULL
+				AND (files.original_name LIKE ? OR files.description LIKE ?)
+			) ranked_files 
+			WHERE rn > ? AND rn <= ?
+		`, user.ID, "%"+search+"%", "%"+search+"%", offset, offset+limit)
+	}
+
+	var fileIDs []string
+	if err := fileIDsQuery.Scan(&fileIDs).Error; err != nil {
+		utils.InternalServerErrorResponse(c, "Failed to retrieve shared files")
+		return
+	}
+
+	// Get the actual files using the IDs
 	if err := database.GetDB().Model(&models.File{}).
 		Preload("User").
-		Where("files.id IN (?)", subquery).
+		Where("files.id IN (?)", fileIDs).
 		Order("files.created_at DESC").
 		Find(&files).Error; err != nil {
 		utils.InternalServerErrorResponse(c, "Failed to retrieve shared files")

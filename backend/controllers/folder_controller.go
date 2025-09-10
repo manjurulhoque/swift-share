@@ -292,22 +292,40 @@ func (fc *FolderController) GetSharedWithMeFolders(c *gin.Context) {
 	var folders []models.Folder
 	offset := (page - 1) * limit
 
-	// Get distinct folders with proper ordering
-	subquery := database.GetDB().Model(&models.Folder{}).
-		Select("DISTINCT folders.id, folders.created_at").
-		Joins("LEFT JOIN collaborators ON folders.id = collaborators.folder_id").
-		Where("collaborators.user_id = ? AND folders.is_trashed = false", user.ID)
+	// Get distinct folder IDs with proper ordering using window function
+	folderIDsQuery := database.GetDB().Raw(`
+		SELECT id FROM (
+			SELECT DISTINCT folders.id, ROW_NUMBER() OVER (ORDER BY folders.created_at DESC) as rn
+			FROM folders 
+			LEFT JOIN collaborators ON folders.id = collaborators.folder_id 
+			WHERE collaborators.user_id = ? AND folders.is_trashed = false AND folders.deleted_at IS NULL
+		) ranked_folders 
+		WHERE rn > ? AND rn <= ?
+	`, user.ID, offset, offset+limit)
 
 	if search != "" {
-		subquery = subquery.Where("name LIKE ? OR description LIKE ?", "%"+search+"%", "%"+search+"%")
+		folderIDsQuery = database.GetDB().Raw(`
+			SELECT id FROM (
+				SELECT DISTINCT folders.id, ROW_NUMBER() OVER (ORDER BY folders.created_at DESC) as rn
+				FROM folders 
+				LEFT JOIN collaborators ON folders.id = collaborators.folder_id 
+				WHERE collaborators.user_id = ? AND folders.is_trashed = false AND folders.deleted_at IS NULL
+				AND (folders.name LIKE ? OR folders.description LIKE ?)
+			) ranked_folders 
+			WHERE rn > ? AND rn <= ?
+		`, user.ID, "%"+search+"%", "%"+search+"%", offset, offset+limit)
 	}
 
-	subquery = subquery.Order("folders.created_at DESC").Offset(offset).Limit(limit)
+	var folderIDs []string
+	if err := folderIDsQuery.Scan(&folderIDs).Error; err != nil {
+		utils.InternalServerErrorResponse(c, "Failed to retrieve shared folders")
+		return
+	}
 
-	// Get the actual folders using the subquery
+	// Get the actual folders using the IDs
 	if err := database.GetDB().Model(&models.Folder{}).
 		Preload("User").
-		Where("folders.id IN (?)", subquery).
+		Where("folders.id IN (?)", folderIDs).
 		Order("folders.created_at DESC").
 		Find(&folders).Error; err != nil {
 		utils.InternalServerErrorResponse(c, "Failed to retrieve shared folders")
