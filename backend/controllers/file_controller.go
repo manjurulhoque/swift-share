@@ -28,17 +28,19 @@ import (
 var appLogger *slog.Logger
 
 type FileController struct {
-	auditService      *services.AuditService
-	fileAccessService *services.FileAccessService
-	trashService      *services.TrashService
+	auditService        *services.AuditService
+	fileAccessService   *services.FileAccessService
+	trashService        *services.TrashService
+	collaboratorService *services.CollaboratorService
 }
 
 func NewFileController() *FileController {
 	appLogger = config.GetLogger()
 	return &FileController{
-		auditService:      services.NewAuditService(),
-		fileAccessService: services.NewFileAccessService(),
-		trashService:      services.NewTrashService(),
+		auditService:        services.NewAuditService(),
+		fileAccessService:   services.NewFileAccessService(),
+		trashService:        services.NewTrashService(),
+		collaboratorService: services.NewCollaboratorService(),
 	}
 }
 
@@ -56,19 +58,18 @@ func (fc *FileController) GetCollaborators(c *gin.Context) {
 		return
 	}
 
-	var file models.File
-	if err := database.GetDB().Where("id = ? AND user_id = ?", fileID, user.ID).First(&file).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusForbidden, "Only the owner can get collaborators")
+	collaborators, err := fc.collaboratorService.GetCollaborators(user.ID, fileID, true)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	var collaborators []models.Collaborator
-	if err := database.GetDB().Where("file_id = ?", fileID).Find(&collaborators).Error; err != nil {
-		utils.InternalServerErrorResponse(c, "Failed to get collaborators")
-		return
+	var responses []models.CollaboratorResponse
+	for _, collab := range collaborators {
+		responses = append(responses, collab.ToResponse())
 	}
 
-	utils.SuccessResponse(c, http.StatusOK, "Collaborators fetched successfully", collaborators)
+	utils.SuccessResponse(c, http.StatusOK, "Collaborators fetched successfully", responses)
 }
 
 // AddCollaborator adds a collaborator to a file with a specific role
@@ -85,34 +86,18 @@ func (fc *FileController) AddCollaborator(c *gin.Context) {
 		return
 	}
 
-	// Ensure requester is owner
-	var file models.File
-	if err := database.GetDB().Where("id = ? AND user_id = ?", fileID, user.ID).First(&file).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusForbidden, "Only the owner can add collaborators")
-		return
-	}
-
 	var req models.AddCollaboratorRequest
 	if !utils.BindAndValidate(c, &req) {
 		return
 	}
 
-	collab := models.Collaborator{
-		FileID:    &file.ID,
-		UserID:    req.UserID,
-		Role:      req.Role,
-		ExpiresAt: req.ExpiresAt,
-	}
-
-	if err := database.GetDB().Where("file_id = ? AND user_id = ?", file.ID, req.UserID).Assign(collab).FirstOrCreate(&collab).Error; err != nil {
-		utils.InternalServerErrorResponse(c, "Failed to add collaborator")
+	collaborator, err := fc.collaboratorService.AddCollaborator(user.ID, fileID, req, true)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	// Load user for response
-	database.GetDB().Preload("User").First(&collab, collab.ID)
-
-	utils.SuccessResponse(c, http.StatusCreated, "Collaborator added", collab.ToResponse())
+	utils.SuccessResponse(c, http.StatusCreated, "Collaborator added", collaborator.ToResponse())
 }
 
 // UpdateCollaborator updates role or expiration for a collaborator
@@ -129,13 +114,6 @@ func (fc *FileController) UpdateCollaborator(c *gin.Context) {
 		return
 	}
 
-	// Ensure requester is owner
-	var file models.File
-	if err := database.GetDB().Where("id = ? AND user_id = ?", fileID, user.ID).First(&file).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusForbidden, "Only the owner can update collaborators")
-		return
-	}
-
 	collaboratorID, err := uuid.Parse(c.Param("collaboratorId"))
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid collaborator ID")
@@ -147,24 +125,13 @@ func (fc *FileController) UpdateCollaborator(c *gin.Context) {
 		return
 	}
 
-	var collab models.Collaborator
-	if err := database.GetDB().Where("file_id = ? AND user_id = ?", file.ID, collaboratorID).First(&collab).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusNotFound, "Collaborator not found")
+	collaborator, err := fc.collaboratorService.UpdateCollaborator(user.ID, fileID, collaboratorID, req, true)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if req.Role != "" {
-		collab.Role = req.Role
-	}
-	collab.ExpiresAt = req.ExpiresAt
-
-	if err := database.GetDB().Save(&collab).Error; err != nil {
-		utils.InternalServerErrorResponse(c, "Failed to update collaborator")
-		return
-	}
-
-	database.GetDB().Preload("User").First(&collab, collab.ID)
-	utils.SuccessResponse(c, http.StatusOK, "Collaborator updated", collab.ToResponse())
+	utils.SuccessResponse(c, http.StatusOK, "Collaborator updated", collaborator.ToResponse())
 }
 
 // RemoveCollaborator removes a collaborator from a file
@@ -181,21 +148,14 @@ func (fc *FileController) RemoveCollaborator(c *gin.Context) {
 		return
 	}
 
-	// Ensure requester is owner
-	var file models.File
-	if err := database.GetDB().Where("id = ? AND user_id = ?", fileID, user.ID).First(&file).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusForbidden, "Only the owner can remove collaborators")
-		return
-	}
-
 	collaboratorID, err := uuid.Parse(c.Param("collaboratorId"))
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid collaborator ID")
 		return
 	}
 
-	if err := database.GetDB().Where("file_id = ? AND user_id = ?", file.ID, collaboratorID).Delete(&models.Collaborator{}).Error; err != nil {
-		utils.InternalServerErrorResponse(c, "Failed to remove collaborator")
+	if err := fc.collaboratorService.RemoveCollaborator(user.ID, fileID, collaboratorID, true); err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 

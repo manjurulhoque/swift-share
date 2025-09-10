@@ -107,7 +107,7 @@ export const shareApi = api.injectEndpoints({
             ShareLinkCreateRequest
         >({
             query: (data) => ({
-                url: "/share",
+                url: "/share/",
                 method: "POST",
                 body: data,
             }),
@@ -119,7 +119,7 @@ export const shareApi = api.injectEndpoints({
             { page?: number; limit?: number }
         >({
             query: ({ page = 1, limit = 20 }) => ({
-                url: `/share?page=${page}&limit=${limit}`,
+                url: `/share/?page=${page}&limit=${limit}`,
             }),
             providesTags: ["Shares"],
         }),

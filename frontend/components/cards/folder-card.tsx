@@ -29,6 +29,7 @@ import {
     FileText,
     FolderOpen,
     Palette,
+    Share2,
 } from "lucide-react";
 import { Folder } from "@/store/api/foldersApi";
 import { formatDistanceToNow } from "date-fns";
@@ -39,6 +40,7 @@ interface FolderCardProps {
     onEdit: (folder: Folder) => void;
     onDelete: (folder: Folder) => void;
     onMove: (folder: Folder) => void;
+    onShare?: (folderId: string) => void;
 }
 
 const folderColors = [
@@ -58,6 +60,7 @@ export function FolderCard({
     onEdit,
     onDelete,
     onMove,
+    onShare,
 }: FolderCardProps) {
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [showEditDialog, setShowEditDialog] = useState(false);
@@ -161,6 +164,14 @@ export function FolderCard({
                                     <Move className="h-4 w-4 mr-2" />
                                     Move
                                 </DropdownMenuItem>
+                                {onShare && (
+                                    <DropdownMenuItem
+                                        onClick={() => onShare(folder.id)}
+                                    >
+                                        <Share2 className="h-4 w-4 mr-2" />
+                                        Share
+                                    </DropdownMenuItem>
+                                )}
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                     onClick={() => setShowDeleteDialog(true)}

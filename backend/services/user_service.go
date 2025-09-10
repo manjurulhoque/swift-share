@@ -89,35 +89,6 @@ func (us *UserService) GetAllUsers(page, perPage int) ([]models.User, int64, err
 	return users, total, nil
 }
 
-// SearchUsers searches users by name or email
-func (us *UserService) SearchUsers(query string, page, perPage int) ([]models.User, int64, error) {
-	var users []models.User
-	var total int64
-
-	searchQuery := "%" + query + "%"
-
-	// Count total matching records
-	us.db.Model(&models.User{}).Where(
-		"first_name ILIKE ? OR last_name ILIKE ? OR email ILIKE ?",
-		searchQuery, searchQuery, searchQuery,
-	).Count(&total)
-
-	// Calculate offset
-	offset := (page - 1) * perPage
-
-	// Get matching users with pagination
-	err := us.db.Where(
-		"first_name ILIKE ? OR last_name ILIKE ? OR email ILIKE ?",
-		searchQuery, searchQuery, searchQuery,
-	).Offset(offset).Limit(perPage).Find(&users).Error
-
-	if err != nil {
-		return nil, 0, err
-	}
-
-	return users, total, nil
-}
-
 // GetUserStats returns user statistics
 func (us *UserService) GetUserStats() (map[string]interface{}, error) {
 	stats := make(map[string]interface{})
@@ -143,4 +114,25 @@ func (us *UserService) GetUserStats() (map[string]interface{}, error) {
 	stats["today_registrations"] = todayUsers
 
 	return stats, nil
+}
+
+// SearchUsers searches for users by name or email
+func (us *UserService) SearchUsers(query string) ([]models.UserResponse, error) {
+	var users []models.User
+	searchPattern := "%" + query + "%"
+
+	err := us.db.Where("CONCAT(first_name, ' ', last_name) ILIKE ? OR email ILIKE ?", searchPattern, searchPattern).
+		Limit(10).
+		Find(&users).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	var responses []models.UserResponse
+	for _, user := range users {
+		responses = append(responses, user.ToResponse())
+	}
+
+	return responses, nil
 }

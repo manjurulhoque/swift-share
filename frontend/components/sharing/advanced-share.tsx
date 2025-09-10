@@ -140,8 +140,10 @@ export function AdvancedShare({
             toast.success("Share link created successfully!");
 
             // Copy to clipboard
-            await navigator.clipboard.writeText(result.data.share_url);
-            toast.success("Share link copied to clipboard!");
+            if (result.data?.share_url) {
+                await navigator.clipboard.writeText(result.data.share_url);
+                toast.success("Share link copied to clipboard!");
+            }
 
             // Reset form
             setPassword("");

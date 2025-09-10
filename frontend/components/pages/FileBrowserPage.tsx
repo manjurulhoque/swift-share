@@ -65,6 +65,7 @@ import {
     SearchFilters,
 } from "@/components/search/advanced-search";
 import { FilePreview } from "@/components/preview/file-preview";
+import { ShareDialog } from "@/components/sharing/share-dialog";
 
 type ViewMode = "grid" | "list";
 type SortField = "name" | "modified" | "size" | "type";
@@ -135,6 +136,15 @@ export default function FileBrowserPage() {
     });
     const [previewFile, setPreviewFile] = useState<File | null>(null);
     const [showPreview, setShowPreview] = useState(false);
+    const [shareDialog, setShareDialog] = useState<{
+        isOpen: boolean;
+        fileId?: string;
+        folderId?: string;
+        fileName?: string;
+        folderName?: string;
+    }>({
+        isOpen: false,
+    });
 
     const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
 
@@ -304,8 +314,25 @@ export default function FileBrowserPage() {
     };
 
     const handleShareFile = async (fileId: string) => {
-        // Implementation for sharing
-        toast.info("Share feature coming soon!");
+        const file = files.find((f) => f.id === fileId);
+        if (file) {
+            setShareDialog({
+                isOpen: true,
+                fileId: file.id,
+                fileName: file.original_name,
+            });
+        }
+    };
+
+    const handleShareFolder = async (folderId: string) => {
+        const folder = folders.find((f) => f.id === folderId);
+        if (folder) {
+            setShareDialog({
+                isOpen: true,
+                folderId: folder.id,
+                folderName: folder.name,
+            });
+        }
     };
 
     // Selection handlers
@@ -711,6 +738,11 @@ export default function FileBrowserPage() {
                                                         handleDeleteFolder
                                                     }
                                                     onMove={handleMoveFolder}
+                                                    onShare={() =>
+                                                        handleShareFolder(
+                                                            folder.id
+                                                        )
+                                                    }
                                                 />
                                             ))}
                                         </div>
@@ -1044,6 +1076,16 @@ export default function FileBrowserPage() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
+
+                {/* Share Dialog */}
+                <ShareDialog
+                    isOpen={shareDialog.isOpen}
+                    fileId={shareDialog.fileId}
+                    folderId={shareDialog.folderId}
+                    fileName={shareDialog.fileName}
+                    folderName={shareDialog.folderName}
+                    onClose={() => setShareDialog({ isOpen: false })}
+                />
             </div>
         </SidebarInset>
     );

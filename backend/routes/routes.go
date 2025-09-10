@@ -46,6 +46,12 @@ func SetupRoutes(router *gin.Engine) {
 				authProtected.GET("/dashboard-stats", authController.GetDashboardStats)
 			}
 
+			// User search routes
+			users := protected.Group("/users")
+			{
+				users.GET("/search", authController.SearchUsers)
+			}
+
 			// File management routes
 			files := protected.Group("/files")
 			{
@@ -78,6 +84,11 @@ func SetupRoutes(router *gin.Engine) {
 				folders.PUT("/:id", folderController.UpdateFolder)
 				folders.DELETE("/:id", folderController.DeleteFolder)
 				folders.POST("/:id/move", folderController.MoveFolder)
+				// Collaborators
+				folders.GET("/:id/collaborators", middleware.FolderOwnerMiddleware(), folderController.GetCollaborators)
+				folders.POST("/:id/collaborators", middleware.FolderOwnerMiddleware(), folderController.AddCollaborator)
+				folders.PUT("/:id/collaborators/:collaboratorId", middleware.FolderOwnerMiddleware(), folderController.UpdateCollaborator)
+				folders.DELETE("/:id/collaborators/:collaboratorId", middleware.FolderOwnerMiddleware(), folderController.RemoveCollaborator)
 			}
 
 			// Trash management routes

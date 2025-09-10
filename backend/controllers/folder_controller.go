@@ -17,16 +17,18 @@ import (
 )
 
 type FolderController struct {
-	auditService *services.AuditService
-	trashService *services.TrashService
-	logger       *slog.Logger
+	auditService        *services.AuditService
+	trashService        *services.TrashService
+	collaboratorService *services.CollaboratorService
+	logger              *slog.Logger
 }
 
 func NewFolderController() *FolderController {
 	return &FolderController{
-		auditService: services.NewAuditService(),
-		trashService: services.NewTrashService(),
-		logger:       config.GetLogger(),
+		auditService:        services.NewAuditService(),
+		trashService:        services.NewTrashService(),
+		collaboratorService: services.NewCollaboratorService(),
+		logger:              config.GetLogger(),
 	}
 }
 
@@ -483,4 +485,122 @@ func (fc *FolderController) DeleteFolder(c *gin.Context) {
 		fmt.Sprintf("Folder moved to trash: %s", folder.Name), c.ClientIP(), c.GetHeader("User-Agent"), models.StatusSuccess)
 
 	utils.SuccessResponse(c, http.StatusOK, "Folder moved to trash successfully", nil)
+}
+
+// GetCollaborators returns all collaborators for a folder
+func (fc *FolderController) GetCollaborators(c *gin.Context) {
+	user, exists := middleware.GetUserFromContext(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not found in context")
+		return
+	}
+
+	folderID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid folder ID")
+		return
+	}
+
+	collaborators, err := fc.collaboratorService.GetCollaborators(user.ID, folderID, false)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var responses []models.CollaboratorResponse
+	for _, collab := range collaborators {
+		responses = append(responses, collab.ToResponse())
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, "Collaborators fetched successfully", responses)
+}
+
+// AddCollaborator adds a collaborator to a folder with a specific role
+func (fc *FolderController) AddCollaborator(c *gin.Context) {
+	user, exists := middleware.GetUserFromContext(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not found in context")
+		return
+	}
+
+	folderID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid folder ID")
+		return
+	}
+
+	var req models.AddCollaboratorRequest
+	if !utils.BindAndValidate(c, &req) {
+		return
+	}
+
+	collaborator, err := fc.collaboratorService.AddCollaborator(user.ID, folderID, req, false)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusCreated, "Collaborator added", collaborator.ToResponse())
+}
+
+// UpdateCollaborator updates role or expiration for a folder collaborator
+func (fc *FolderController) UpdateCollaborator(c *gin.Context) {
+	user, exists := middleware.GetUserFromContext(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not found in context")
+		return
+	}
+
+	folderID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid folder ID")
+		return
+	}
+
+	collaboratorID, err := uuid.Parse(c.Param("collaboratorId"))
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid collaborator ID")
+		return
+	}
+
+	var req models.UpdateCollaboratorRequest
+	if !utils.BindAndValidate(c, &req) {
+		return
+	}
+
+	collaborator, err := fc.collaboratorService.UpdateCollaborator(user.ID, folderID, collaboratorID, req, false)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, "Collaborator updated", collaborator.ToResponse())
+}
+
+// RemoveCollaborator removes a collaborator from a folder
+func (fc *FolderController) RemoveCollaborator(c *gin.Context) {
+	user, exists := middleware.GetUserFromContext(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not found in context")
+		return
+	}
+
+	folderID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid folder ID")
+		return
+	}
+
+	collaboratorID, err := uuid.Parse(c.Param("collaboratorId"))
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid collaborator ID")
+		return
+	}
+
+	if err := fc.collaboratorService.RemoveCollaborator(user.ID, folderID, collaboratorID, false); err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, "Collaborator removed", nil)
 }

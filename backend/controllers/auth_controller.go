@@ -389,3 +389,51 @@ func (ac *AuthController) GetDashboardStats(c *gin.Context) {
 
 	utils.SuccessResponse(c, http.StatusOK, "Dashboard statistics retrieved successfully", stats)
 }
+
+// SearchUsers godoc
+// @Summary Search users
+// @Description Search for users by name or email for collaboration
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param q query string true "Search query"
+// @Success 200 {object} utils.APIResponse "Users found successfully"
+// @Failure 400 {object} utils.APIResponse "Invalid search query"
+// @Failure 401 {object} utils.APIResponse "Unauthorized"
+// @Router /users/search [get]
+func (ac *AuthController) SearchUsers(c *gin.Context) {
+	user, exists := middleware.GetUserFromContext(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not found in context")
+		return
+	}
+
+	query := c.Query("q")
+	if query == "" {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Search query is required")
+		return
+	}
+
+	if len(query) < 2 {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Search query must be at least 2 characters")
+		return
+	}
+
+	users, err := ac.userService.SearchUsers(query)
+	if err != nil {
+		config.GetLogger().Error("Failed to search users", "error", err, "query", query)
+		utils.InternalServerErrorResponse(c, "Failed to search users")
+		return
+	}
+
+	// Filter out the current user
+	var filteredUsers []models.UserResponse
+	for _, u := range users {
+		if u.ID != user.ID {
+			filteredUsers = append(filteredUsers, u)
+		}
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, "Users found successfully", filteredUsers)
+}

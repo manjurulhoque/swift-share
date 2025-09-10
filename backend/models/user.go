@@ -49,6 +49,7 @@ type UserResponse struct {
 	ID            uuid.UUID  `json:"id"`
 	FirstName     string     `json:"first_name"`
 	LastName      string     `json:"last_name"`
+	Name          string     `json:"name"`
 	Email         string     `json:"email"`
 	IsActive      bool       `json:"is_active"`
 	IsAdmin       bool       `json:"is_admin"`
@@ -93,6 +94,7 @@ func (u *User) ToResponse() UserResponse {
 		ID:            u.ID,
 		FirstName:     u.FirstName,
 		LastName:      u.LastName,
+		Name:          u.GetFullName(),
 		Email:         u.Email,
 		IsActive:      u.IsActive,
 		IsAdmin:       u.IsAdmin,
