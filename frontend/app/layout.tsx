@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Providers } from "@/components/providers/Providers";
 
 export const metadata: Metadata = {
-    title: "CloudShare - Secure File Sharing",
+    title: "SwiftShare - Secure File Sharing",
     description:
         "Professional file sharing platform trusted by thousands of businesses worldwide.",
 };
