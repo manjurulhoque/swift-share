@@ -242,6 +242,7 @@ export default function FileBrowserPage() {
         try {
             await deleteFolder(folder.id).unwrap();
             toast.success("Folder deleted successfully!");
+            refetch();
         } catch (error) {
             toast.error("Failed to delete folder");
             console.error("Delete folder error:", error);
@@ -274,6 +275,7 @@ export default function FileBrowserPage() {
         try {
             await deleteFile(fileId).unwrap();
             toast.success(`${fileName} deleted successfully!`);
+            refetch();
         } catch (error) {
             toast.error("Failed to delete file");
             console.error("Delete file error:", error);
