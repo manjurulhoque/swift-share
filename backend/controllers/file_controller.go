@@ -517,8 +517,8 @@ func (fc *FileController) GetFiles(c *gin.Context) {
 
 	// Owner files or collaborator files (exclude trashed items)
 	query := database.GetDB().Model(&models.File{}).
-		Joins("LEFT JOIN file_permissions ON files.id = file_permissions.file_id").
-		Where("(files.user_id = ? OR file_permissions.user_id = ?) AND files.is_trashed = false", user.ID, user.ID)
+		Joins("LEFT JOIN collaborators ON files.id = collaborators.file_id").
+		Where("(files.user_id = ? OR collaborators.user_id = ?) AND files.is_trashed = false", user.ID, user.ID)
 
 	if search != "" {
 		query = query.Where("original_name LIKE ? OR description LIKE ?", "%"+search+"%", "%"+search+"%")
@@ -527,8 +527,8 @@ func (fc *FileController) GetFiles(c *gin.Context) {
 	var total int64
 	// Use subquery to count distinct files (exclude trashed items)
 	countQuery := database.GetDB().Model(&models.File{}).
-		Joins("LEFT JOIN file_permissions ON files.id = file_permissions.file_id").
-		Where("(files.user_id = ? OR file_permissions.user_id = ?) AND files.is_trashed = false", user.ID, user.ID)
+		Joins("LEFT JOIN collaborators ON files.id = collaborators.file_id").
+		Where("(files.user_id = ? OR collaborators.user_id = ?) AND files.is_trashed = false", user.ID, user.ID)
 
 	if search != "" {
 		countQuery = countQuery.Where("original_name LIKE ? OR description LIKE ?", "%"+search+"%", "%"+search+"%")
@@ -542,8 +542,8 @@ func (fc *FileController) GetFiles(c *gin.Context) {
 	// Use subquery to get distinct file IDs with proper ordering
 	subquery := database.GetDB().Model(&models.File{}).
 		Select("DISTINCT files.id, files.created_at").
-		Joins("LEFT JOIN file_permissions ON files.id = file_permissions.file_id").
-		Where("files.user_id = ? OR file_permissions.user_id = ?", user.ID, user.ID)
+		Joins("LEFT JOIN collaborators ON files.id = collaborators.file_id").
+		Where("files.user_id = ? OR collaborators.user_id = ?", user.ID, user.ID)
 
 	if search != "" {
 		subquery = subquery.Where("original_name LIKE ? OR description LIKE ?", "%"+search+"%", "%"+search+"%")
