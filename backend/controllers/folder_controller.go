@@ -124,6 +124,8 @@ func (fc *FolderController) GetFolders(c *gin.Context) {
 		return
 	}
 
+	fc.logger.Info("Getting folders", "user_id", user.ID)
+
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 	search := c.Query("search")
@@ -152,6 +154,7 @@ func (fc *FolderController) GetFolders(c *gin.Context) {
 			return
 		}
 	}
+	fc.logger.Info("Getting folders", "user_id", user.ID, "parent_id", parentID, "search", search)
 
 	// Build query for folders (exclude trashed items)
 	folderQuery := database.GetDB().Model(&models.Folder{}).Where("user_id = ? AND is_trashed = false", user.ID)
@@ -261,6 +264,8 @@ func (fc *FolderController) GetSharedWithMeFolders(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 	search := c.Query("search")
+
+	fc.logger.Info("Getting shared with me folders", "user_id", user.ID, "page", page, "limit", limit, "search", search)
 
 	if page < 1 {
 		page = 1
