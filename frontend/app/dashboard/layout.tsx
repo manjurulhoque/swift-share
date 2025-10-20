@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
+import { DashboardTopbar } from "@/components/dashboard/DashboardTopbar";
 
 export default function DashboardLayout({
     children,
@@ -43,7 +44,10 @@ export default function DashboardLayout({
         <SidebarProvider>
             <div className="min-h-screen flex w-full">
                 <DashboardSidebar />
-                {children}
+                <div className="flex-1 flex flex-col">
+                    <DashboardTopbar />
+                    <main className="flex-1 overflow-auto">{children}</main>
+                </div>
             </div>
         </SidebarProvider>
     );

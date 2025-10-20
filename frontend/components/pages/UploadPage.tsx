@@ -6,7 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Upload, File, X, Send, AlertCircle } from "lucide-react";
-import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarInset } from "@/components/ui/sidebar";
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { useUploadMultipleFilesMutation } from "@/store/api/filesApi";
 import { useAuth } from "@/hooks/use-auth";
 import { redirect, RedirectType } from "next/navigation";
@@ -83,10 +91,21 @@ export default function UploadPage() {
     return (
         <SidebarInset>
             <div className="flex flex-col">
-                <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-                    <SidebarTrigger className="-ml-1" />
-                    <h1 className="text-lg font-semibold">Upload Files</h1>
-                </header>
+                <div className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+                    <Breadcrumb>
+                        <BreadcrumbList>
+                            <BreadcrumbItem>
+                                <BreadcrumbLink href="/dashboard">
+                                    Dashboard
+                                </BreadcrumbLink>
+                            </BreadcrumbItem>
+                            <BreadcrumbSeparator />
+                            <BreadcrumbItem>
+                                <BreadcrumbPage>Upload Files</BreadcrumbPage>
+                            </BreadcrumbItem>
+                        </BreadcrumbList>
+                    </Breadcrumb>
+                </div>
 
                 <div className="flex-1 p-4">
                     <div className="max-w-4xl mx-auto space-y-6">

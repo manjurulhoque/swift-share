@@ -14,7 +14,15 @@ import {
     Search,
     Filter,
 } from "lucide-react";
-import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarInset } from "@/components/ui/sidebar";
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { useGetDashboardStatsQuery } from "@/store/api/authApi";
 import { useGetFilesQuery } from "@/store/api/filesApi";
 import { useGetRecentFilesQuery } from "@/store/api/filesApi";
@@ -88,14 +96,15 @@ export default function DashboardPage() {
     return (
         <SidebarInset>
             <div className="flex flex-col">
-                <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-                    <SidebarTrigger className="-ml-1" />
-                    <div className="flex items-center gap-2">
-                        <h1 className="text-lg font-semibold">
-                            Dashboard Overview
-                        </h1>
-                    </div>
-                </header>
+                <div className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+                    <Breadcrumb>
+                        <BreadcrumbList>
+                            <BreadcrumbItem>
+                                <BreadcrumbPage>Dashboard</BreadcrumbPage>
+                            </BreadcrumbItem>
+                        </BreadcrumbList>
+                    </Breadcrumb>
+                </div>
 
                 <div className="flex-1 p-4">
                     <div className="max-w-7xl mx-auto">

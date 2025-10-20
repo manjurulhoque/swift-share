@@ -16,7 +16,15 @@ import { useToast } from "@/hooks/use-toast";
 import { Share2, Search, Filter } from "lucide-react";
 import { ShareLink } from "@/store/api/shareApi";
 import { redirect, RedirectType } from "next/navigation";
-import { SidebarInset, SidebarTrigger } from "../ui/sidebar";
+import { SidebarInset } from "../ui/sidebar";
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { ShareLinkCard } from "@/components/cards/share-link-card";
 
 export default function SharedPage() {
@@ -118,10 +126,21 @@ export default function SharedPage() {
     return (
         <SidebarInset>
             <div className="flex flex-col">
-                <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-                    <SidebarTrigger className="-ml-1" />
-                    <h1 className="text-lg font-semibold">Shared Files</h1>
-                </header>
+                <div className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+                    <Breadcrumb>
+                        <BreadcrumbList>
+                            <BreadcrumbItem>
+                                <BreadcrumbLink href="/dashboard">
+                                    Dashboard
+                                </BreadcrumbLink>
+                            </BreadcrumbItem>
+                            <BreadcrumbSeparator />
+                            <BreadcrumbItem>
+                                <BreadcrumbPage>Shared Files</BreadcrumbPage>
+                            </BreadcrumbItem>
+                        </BreadcrumbList>
+                    </Breadcrumb>
+                </div>
             </div>
 
             <div className="flex-1 p-4">

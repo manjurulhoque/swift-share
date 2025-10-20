@@ -5,7 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarInset } from "@/components/ui/sidebar";
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import {
     Search,
     Filter,
@@ -119,12 +127,23 @@ export default function SharedWithMePage() {
         return (
             <SidebarInset>
                 <div className="flex flex-col">
-                    <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-                        <SidebarTrigger className="-ml-1" />
-                        <h1 className="text-lg font-semibold">
-                            Shared with Me
-                        </h1>
-                    </header>
+                    <div className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+                        <Breadcrumb>
+                            <BreadcrumbList>
+                                <BreadcrumbItem>
+                                    <BreadcrumbLink href="/dashboard">
+                                        Dashboard
+                                    </BreadcrumbLink>
+                                </BreadcrumbItem>
+                                <BreadcrumbSeparator />
+                                <BreadcrumbItem>
+                                    <BreadcrumbPage>
+                                        Shared with Me
+                                    </BreadcrumbPage>
+                                </BreadcrumbItem>
+                            </BreadcrumbList>
+                        </Breadcrumb>
+                    </div>
                     <div className="flex-1 p-4">
                         <Card>
                             <CardContent className="p-12 text-center">
@@ -151,10 +170,21 @@ export default function SharedWithMePage() {
     return (
         <SidebarInset>
             <div className="flex flex-col">
-                <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-                    <SidebarTrigger className="-ml-1" />
-                    <h1 className="text-lg font-semibold">Shared with Me</h1>
-                </header>
+                <div className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+                    <Breadcrumb>
+                        <BreadcrumbList>
+                            <BreadcrumbItem>
+                                <BreadcrumbLink href="/dashboard">
+                                    Dashboard
+                                </BreadcrumbLink>
+                            </BreadcrumbItem>
+                            <BreadcrumbSeparator />
+                            <BreadcrumbItem>
+                                <BreadcrumbPage>Shared with Me</BreadcrumbPage>
+                            </BreadcrumbItem>
+                        </BreadcrumbList>
+                    </Breadcrumb>
+                </div>
 
                 <div className="flex-1 p-4">
                     <div className="max-w-7xl mx-auto space-y-6">

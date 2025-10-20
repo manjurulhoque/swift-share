@@ -14,7 +14,15 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarInset } from "@/components/ui/sidebar";
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -47,7 +55,7 @@ import {
     useDeleteFolderMutation,
     useMoveFolderMutation,
     Folder as FolderType,
-    Breadcrumb,
+    Breadcrumb as BreadcrumbType,
 } from "@/store/api/foldersApi";
 import {
     useUpdateFileMutation,
@@ -193,7 +201,7 @@ export default function FileBrowserPage() {
     }, []);
 
     const navigateToBreadcrumb = useCallback(
-        (breadcrumb: Breadcrumb) => {
+        (breadcrumb: BreadcrumbType) => {
             if (breadcrumb.id) {
                 navigateToFolder(breadcrumb.id);
             } else {
@@ -473,10 +481,21 @@ export default function FileBrowserPage() {
         return (
             <SidebarInset>
                 <div className="flex flex-col">
-                    <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-                        <SidebarTrigger className="-ml-1" />
-                        <h1 className="text-lg font-semibold">Files</h1>
-                    </header>
+                    <div className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+                        <Breadcrumb>
+                            <BreadcrumbList>
+                                <BreadcrumbItem>
+                                    <BreadcrumbLink href="/dashboard">
+                                        Dashboard
+                                    </BreadcrumbLink>
+                                </BreadcrumbItem>
+                                <BreadcrumbSeparator />
+                                <BreadcrumbItem>
+                                    <BreadcrumbPage>Files</BreadcrumbPage>
+                                </BreadcrumbItem>
+                            </BreadcrumbList>
+                        </Breadcrumb>
+                    </div>
                     <div className="flex-1 p-4">
                         <Card>
                             <CardContent className="p-8 text-center">
@@ -501,10 +520,21 @@ export default function FileBrowserPage() {
     return (
         <SidebarInset>
             <div className="flex flex-col">
-                <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-                    <SidebarTrigger className="-ml-1" />
-                    <h1 className="text-lg font-semibold">Files</h1>
-                </header>
+                <div className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+                    <Breadcrumb>
+                        <BreadcrumbList>
+                            <BreadcrumbItem>
+                                <BreadcrumbLink href="/dashboard">
+                                    Dashboard
+                                </BreadcrumbLink>
+                            </BreadcrumbItem>
+                            <BreadcrumbSeparator />
+                            <BreadcrumbItem>
+                                <BreadcrumbPage>Files</BreadcrumbPage>
+                            </BreadcrumbItem>
+                        </BreadcrumbList>
+                    </Breadcrumb>
+                </div>
 
                 <div className="flex-1 p-4">
                     <div className="max-w-7xl mx-auto space-y-6">
