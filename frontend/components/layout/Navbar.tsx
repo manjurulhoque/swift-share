@@ -26,7 +26,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const Navbar = () => {
     const pathname = usePathname();
-    const { session, isAuthenticated, logout, isAdmin } = useAuth();
+    const { session, isAuthenticated, logout, isAdmin, isLoading } = useAuth();
 
     const isActive = (path: string) => pathname === path;
 
@@ -44,7 +44,11 @@ const Navbar = () => {
                     </div>
 
                     <div className="flex items-center space-x-4">
-                        {isAuthenticated ? (
+                        {isLoading ? (
+                            <div className="flex items-center space-x-4">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 mx-auto"></div>
+                            </div>
+                        ) : isAuthenticated ? (
                             <>
                                 <Link
                                     href="/dashboard"
