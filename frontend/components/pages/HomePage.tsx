@@ -129,7 +129,179 @@ export default function HomePage() {
             <Navbar />
             <main>
                 {/* Hero Section */}
-                <section className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white py-24 relative overflow-hidden">
+                <section
+                    className="text-white py-24 relative overflow-hidden"
+                    style={{ backgroundColor: "#1e40af" }}
+                >
+                    {/* SVG Background Pattern */}
+                    <div className="absolute inset-0">
+                        <svg
+                            className="w-full h-full object-cover"
+                            viewBox="0 0 1200 800"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                            preserveAspectRatio="xMidYMid slice"
+                        >
+                            <defs>
+                                <pattern
+                                    id="hero-pattern"
+                                    x="0"
+                                    y="0"
+                                    width="100"
+                                    height="100"
+                                    patternUnits="userSpaceOnUse"
+                                >
+                                    <circle
+                                        cx="50"
+                                        cy="50"
+                                        r="2"
+                                        fill="rgba(255,255,255,0.1)"
+                                    />
+                                    <circle
+                                        cx="20"
+                                        cy="20"
+                                        r="1"
+                                        fill="rgba(255,255,255,0.05)"
+                                    />
+                                    <circle
+                                        cx="80"
+                                        cy="30"
+                                        r="1.5"
+                                        fill="rgba(255,255,255,0.08)"
+                                    />
+                                    <circle
+                                        cx="30"
+                                        cy="80"
+                                        r="1"
+                                        fill="rgba(255,255,255,0.06)"
+                                    />
+                                    <circle
+                                        cx="70"
+                                        cy="70"
+                                        r="1"
+                                        fill="rgba(255,255,255,0.04)"
+                                    />
+                                </pattern>
+                                <linearGradient
+                                    id="hero-gradient"
+                                    x1="0%"
+                                    y1="0%"
+                                    x2="100%"
+                                    y2="100%"
+                                >
+                                    <stop
+                                        offset="0%"
+                                        stopColor="#3b82f6"
+                                        stopOpacity="0.8"
+                                    />
+                                    <stop
+                                        offset="50%"
+                                        stopColor="#1d4ed8"
+                                        stopOpacity="0.9"
+                                    />
+                                    <stop
+                                        offset="100%"
+                                        stopColor="#1e3a8a"
+                                        stopOpacity="1"
+                                    />
+                                </linearGradient>
+                            </defs>
+                            <rect
+                                width="1200"
+                                height="800"
+                                fill="url(#hero-gradient)"
+                            />
+                            <rect
+                                width="1200"
+                                height="800"
+                                fill="url(#hero-pattern)"
+                            />
+
+                            {/* Floating geometric shapes */}
+                            <g opacity="0.1">
+                                <polygon
+                                    points="100,150 150,100 200,150 150,200"
+                                    fill="white"
+                                />
+                                <circle cx="300" cy="200" r="30" fill="white" />
+                                <rect
+                                    x="500"
+                                    y="100"
+                                    width="60"
+                                    height="60"
+                                    fill="white"
+                                    transform="rotate(45 530 130)"
+                                />
+                                <polygon
+                                    points="800,180 850,130 900,180 850,230"
+                                    fill="white"
+                                />
+                                <circle
+                                    cx="1000"
+                                    cy="250"
+                                    r="25"
+                                    fill="white"
+                                />
+                                <rect
+                                    x="200"
+                                    y="400"
+                                    width="50"
+                                    height="50"
+                                    fill="white"
+                                    transform="rotate(30 225 425)"
+                                />
+                                <polygon
+                                    points="400,450 450,400 500,450 450,500"
+                                    fill="white"
+                                />
+                                <circle cx="700" cy="500" r="35" fill="white" />
+                                <rect
+                                    x="900"
+                                    y="400"
+                                    width="70"
+                                    height="70"
+                                    fill="white"
+                                    transform="rotate(60 935 435)"
+                                />
+                                <polygon
+                                    points="150,650 200,600 250,650 200,700"
+                                    fill="white"
+                                />
+                                <circle cx="450" cy="700" r="20" fill="white" />
+                                <rect
+                                    x="650"
+                                    y="600"
+                                    width="40"
+                                    height="40"
+                                    fill="white"
+                                    transform="rotate(45 670 620)"
+                                />
+                                <polygon
+                                    points="950,650 1000,600 1050,650 1000,700"
+                                    fill="white"
+                                />
+                            </g>
+
+                            {/* Connection lines */}
+                            <g
+                                stroke="rgba(255,255,255,0.1)"
+                                strokeWidth="1"
+                                fill="none"
+                                opacity="0.3"
+                            >
+                                <line x1="100" y1="150" x2="300" y2="200" />
+                                <line x1="300" y1="200" x2="500" y2="130" />
+                                <line x1="500" y1="130" x2="800" y2="180" />
+                                <line x1="800" y1="180" x2="1000" y2="250" />
+                                <line x1="200" y1="425" x2="400" y2="450" />
+                                <line x1="400" y1="450" x2="700" y2="500" />
+                                <line x1="700" y1="500" x2="900" y2="435" />
+                                <line x1="150" y1="650" x2="450" y2="700" />
+                                <line x1="450" y1="700" x2="650" y2="620" />
+                                <line x1="650" y1="620" x2="950" y2="650" />
+                            </g>
+                        </svg>
+                    </div>
                     <div className="absolute inset-0 bg-black/10"></div>
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
                         <div className="mb-6">
@@ -395,7 +567,209 @@ export default function HomePage() {
                 </section>
 
                 {/* CTA Section */}
-                <section className="py-24 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 relative overflow-hidden">
+                <section
+                    className="py-24 relative overflow-hidden"
+                    style={{ backgroundColor: "#1e40af" }}
+                >
+                    {/* SVG Background Pattern */}
+                    <div className="absolute inset-0">
+                        <svg
+                            className="w-full h-full object-cover"
+                            viewBox="0 0 1200 600"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                            preserveAspectRatio="xMidYMid slice"
+                        >
+                            <defs>
+                                <pattern
+                                    id="cta-pattern"
+                                    x="0"
+                                    y="0"
+                                    width="80"
+                                    height="80"
+                                    patternUnits="userSpaceOnUse"
+                                >
+                                    <circle
+                                        cx="40"
+                                        cy="40"
+                                        r="1.5"
+                                        fill="rgba(255,255,255,0.08)"
+                                    />
+                                    <circle
+                                        cx="10"
+                                        cy="10"
+                                        r="0.8"
+                                        fill="rgba(255,255,255,0.04)"
+                                    />
+                                    <circle
+                                        cx="70"
+                                        cy="20"
+                                        r="1"
+                                        fill="rgba(255,255,255,0.06)"
+                                    />
+                                    <circle
+                                        cx="20"
+                                        cy="70"
+                                        r="0.8"
+                                        fill="rgba(255,255,255,0.05)"
+                                    />
+                                    <circle
+                                        cx="60"
+                                        cy="60"
+                                        r="0.8"
+                                        fill="rgba(255,255,255,0.03)"
+                                    />
+                                </pattern>
+                                <linearGradient
+                                    id="cta-gradient"
+                                    x1="0%"
+                                    y1="0%"
+                                    x2="100%"
+                                    y2="100%"
+                                >
+                                    <stop
+                                        offset="0%"
+                                        stopColor="#2563eb"
+                                        stopOpacity="0.9"
+                                    />
+                                    <stop
+                                        offset="50%"
+                                        stopColor="#1e40af"
+                                        stopOpacity="1"
+                                    />
+                                    <stop
+                                        offset="100%"
+                                        stopColor="#1e3a8a"
+                                        stopOpacity="1"
+                                    />
+                                </linearGradient>
+                                <radialGradient
+                                    id="cta-radial"
+                                    cx="50%"
+                                    cy="50%"
+                                    r="50%"
+                                >
+                                    <stop
+                                        offset="0%"
+                                        stopColor="rgba(59, 130, 246, 0.3)"
+                                    />
+                                    <stop
+                                        offset="100%"
+                                        stopColor="rgba(30, 64, 175, 0.8)"
+                                    />
+                                </radialGradient>
+                            </defs>
+                            <rect
+                                width="1200"
+                                height="600"
+                                fill="url(#cta-gradient)"
+                            />
+                            <rect
+                                width="1200"
+                                height="600"
+                                fill="url(#cta-pattern)"
+                            />
+
+                            {/* Wave-like shapes */}
+                            <g opacity="0.15">
+                                <path
+                                    d="M0,200 Q300,150 600,200 T1200,200 L1200,300 Q900,250 600,300 T0,300 Z"
+                                    fill="white"
+                                />
+                                <path
+                                    d="M0,400 Q400,350 800,400 T1200,400 L1200,500 Q800,450 400,500 T0,500 Z"
+                                    fill="white"
+                                />
+                            </g>
+
+                            {/* Floating elements */}
+                            <g opacity="0.1">
+                                <circle cx="150" cy="100" r="20" fill="white" />
+                                <rect
+                                    x="300"
+                                    y="80"
+                                    width="30"
+                                    height="30"
+                                    fill="white"
+                                    transform="rotate(45 315 95)"
+                                />
+                                <polygon
+                                    points="500,90 530,60 560,90 530,120"
+                                    fill="white"
+                                />
+                                <circle cx="750" cy="120" r="15" fill="white" />
+                                <rect
+                                    x="900"
+                                    y="100"
+                                    width="25"
+                                    height="25"
+                                    fill="white"
+                                    transform="rotate(30 912.5 112.5)"
+                                />
+
+                                <circle cx="200" cy="300" r="18" fill="white" />
+                                <rect
+                                    x="400"
+                                    y="280"
+                                    width="35"
+                                    height="35"
+                                    fill="white"
+                                    transform="rotate(60 417.5 297.5)"
+                                />
+                                <polygon
+                                    points="650,290 680,260 710,290 680,320"
+                                    fill="white"
+                                />
+                                <circle cx="850" cy="320" r="22" fill="white" />
+                                <rect
+                                    x="1000"
+                                    y="300"
+                                    width="28"
+                                    height="28"
+                                    fill="white"
+                                    transform="rotate(45 1014 314)"
+                                />
+
+                                <circle cx="100" cy="500" r="16" fill="white" />
+                                <rect
+                                    x="350"
+                                    y="480"
+                                    width="32"
+                                    height="32"
+                                    fill="white"
+                                    transform="rotate(15 366 496)"
+                                />
+                                <polygon
+                                    points="600,490 630,460 660,490 630,520"
+                                    fill="white"
+                                />
+                                <circle cx="800" cy="520" r="19" fill="white" />
+                                <rect
+                                    x="950"
+                                    y="500"
+                                    width="26"
+                                    height="26"
+                                    fill="white"
+                                    transform="rotate(60 963 513)"
+                                />
+                            </g>
+
+                            {/* Connecting lines */}
+                            <g
+                                stroke="rgba(255,255,255,0.08)"
+                                strokeWidth="1"
+                                fill="none"
+                                opacity="0.4"
+                            >
+                                <path d="M150,100 Q300,200 500,90" />
+                                <path d="M500,90 Q700,150 900,100" />
+                                <path d="M200,300 Q400,250 650,290" />
+                                <path d="M650,290 Q800,350 1000,300" />
+                                <path d="M100,500 Q300,450 600,490" />
+                                <path d="M600,490 Q750,550 950,500" />
+                            </g>
+                        </svg>
+                    </div>
                     <div className="absolute inset-0 bg-black/10"></div>
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
                         <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
