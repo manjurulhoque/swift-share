@@ -16,6 +16,7 @@ import {
     ArrowRight,
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 
 export default function PricingPage() {
     const [isYearly, setIsYearly] = useState(false);
@@ -354,6 +355,8 @@ export default function PricingPage() {
                         </div>
                     </div>
                 </section>
+
+                <Footer />
             </main>
         </div>
     );

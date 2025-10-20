@@ -21,6 +21,7 @@ import {
     Headphones,
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 
 export default function FeaturesPage() {
     const coreFeatures = [
@@ -366,6 +367,8 @@ export default function FeaturesPage() {
                         </div>
                     </div>
                 </section>
+
+                <Footer />
             </main>
         </div>
     );

@@ -8,13 +8,13 @@ import {
     Award,
     Globe,
     Heart,
-    Zap,
     Shield,
     Star,
     Lightbulb,
     TrendingUp,
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 
 export default function AboutPage() {
     const values = [
@@ -333,6 +333,8 @@ export default function AboutPage() {
                         </div>
                     </div>
                 </section>
+
+                <Footer />
             </main>
         </div>
     );

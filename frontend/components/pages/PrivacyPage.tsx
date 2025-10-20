@@ -13,6 +13,7 @@ import {
     Clock,
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 
 export default function PrivacyPage() {
     const sections = [
@@ -382,6 +383,8 @@ export default function PrivacyPage() {
                         </div>
                     </div>
                 </section>
+
+                <Footer />
             </main>
         </div>
     );

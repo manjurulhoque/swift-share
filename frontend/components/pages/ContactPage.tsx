@@ -10,14 +10,12 @@ import {
     Mail,
     Phone,
     MapPin,
-    Clock,
     MessageSquare,
-    Headphones,
     Building,
-    User,
     Send,
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 
 export default function ContactPage() {
     const [formData, setFormData] = useState({
@@ -394,13 +392,15 @@ export default function ContactPage() {
                             </Button>
                             <Button
                                 variant="outline"
-                                className="border-white text-white hover:bg-white hover:text-blue-600 px-8 py-3"
+                                className="border-white text-blue-600 hover:bg-white hover:text-blue-600 px-8 py-3"
                             >
                                 View FAQ
                             </Button>
                         </div>
                     </div>
                 </section>
+
+                <Footer />
             </main>
         </div>
     );
