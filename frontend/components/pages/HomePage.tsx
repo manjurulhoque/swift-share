@@ -27,72 +27,72 @@ export default function HomePage() {
     const features = [
         {
             icon: Shield,
-            title: "Enterprise Security",
+            title: "Secure by Default",
             description:
-                "Bank-level encryption with SOC 2 compliance. Your files are protected with AES-256 encryption at rest and in transit.",
+                "Files are encrypted in transit and at rest. We use industry-standard TLS and AES-256 encryption - no fancy marketing speak, just solid security.",
         },
         {
             icon: Zap,
-            title: "Lightning Fast",
+            title: "Fast Uploads",
             description:
-                "Experience blazing-fast uploads up to 10GB with smart compression and resume capability for interrupted transfers.",
+                "Upload files up to 2GB on the free plan, 10GB on paid plans. Chunked uploads mean you won't lose progress if your connection drops.",
         },
         {
             icon: Globe,
-            title: "Global CDN",
+            title: "Works Everywhere",
             description:
-                "Access your files instantly from anywhere with our global content delivery network spanning 50+ locations worldwide.",
+                "Access your files from any device with a web browser. No apps to install, no complicated setup - just upload and share.",
         },
         {
             icon: Users,
-            title: "Team Workspace",
+            title: "Team Sharing",
             description:
-                "Advanced collaboration tools with real-time comments, version control, and granular permission management.",
+                "Share folders with your team, set permissions, and track who's accessed what. Perfect for small teams who need to stay organized.",
         },
         {
             icon: Lock,
-            title: "Zero-Knowledge",
+            title: "Password Protection",
             description:
-                "End-to-end encryption ensures only you can access your data. Even we can't see your files - ultimate privacy guaranteed.",
+                "Add passwords to your shared links and set expiration dates. Control who sees your files and for how long.",
         },
         {
             icon: Cloud,
-            title: "Smart Sync",
+            title: "Reliable Storage",
             description:
-                "Intelligent synchronization with conflict resolution, automatic backups, and offline access across all devices.",
+                "Your files are stored on redundant servers with regular backups. We've got 99.9% uptime and 24/7 monitoring.",
         },
     ];
 
     const stats = [
-        { number: "25M+", label: "Files Shared Securely" },
-        { number: "100K+", label: "Happy Customers" },
-        { number: "99.99%", label: "Uptime SLA" },
-        { number: "150+", label: "Countries Served" },
+        { number: "2GB", label: "Free storage per user" },
+        { number: "50MB", label: "Max file size (free)" },
+        { number: "99.9%", label: "Uptime guarantee" },
+        { number: "24/7", label: "Support available" },
     ];
 
     const testimonials = [
         {
-            name: "Sarah Chen",
-            role: "CTO, TechCorp",
-            company: "TechCorp Inc.",
+            name: "Alex Kim",
+            role: "Freelance Designer",
+            company: "Independent",
             content:
-                "SwiftShare has revolutionized how our distributed team shares sensitive documents. The security features give us complete peace of mind.",
+                "Finally, a file sharing tool that doesn't make me want to throw my laptop out the window. Simple, fast, and it just works. My clients love how easy it is to download their files.",
             rating: 5,
         },
         {
-            name: "Michael Rodriguez",
-            role: "Creative Director",
-            company: "Design Studio",
+            name: "Maria Santos",
+            role: "Marketing Manager",
+            company: "Local Agency",
             content:
-                "The speed and reliability are incredible. We can share large design files with clients instantly, and the collaboration features are game-changing.",
+                "We were using Google Drive but the permissions were a nightmare. SwiftShare lets us share client assets without accidentally giving them access to everything. Game changer.",
             rating: 5,
         },
         {
-            name: "Emma Thompson",
-            role: "Project Manager",
-            company: "Global Consulting",
+            name: "David Park",
+            role: "Small Business Owner",
+            company: "Park & Associates",
             content:
-                "SwiftShare's enterprise features and compliance certifications make it the perfect solution for our regulated industry.",
+                "I needed something simple for my accounting firm. No bells and whistles, just secure file sharing. SwiftShare does exactly what it says on the tin.",
             rating: 5,
         },
     ];
@@ -100,27 +100,27 @@ export default function HomePage() {
     const useCases = [
         {
             icon: FileText,
-            title: "Document Sharing",
+            title: "Client Deliverables",
             description:
-                "Securely share contracts, reports, and sensitive documents with clients and partners.",
+                "Send finished work to clients without the back-and-forth of email attachments. They get a clean download link that works on any device.",
         },
         {
             icon: Download,
-            title: "Large File Transfer",
+            title: "Large Files",
             description:
-                "Send files up to 10GB instantly without email size limitations or compression quality loss.",
+                "Photos, videos, and design files that are too big for email. Upload once, share the link, and let recipients download at their own pace.",
         },
         {
             icon: Users,
-            title: "Team Collaboration",
+            title: "Team Projects",
             description:
-                "Collaborate on projects with real-time updates, comments, and version tracking.",
+                "Share project folders with your team. Everyone gets access to the same files without creating duplicate copies everywhere.",
         },
         {
             icon: Clock,
             title: "Temporary Sharing",
             description:
-                "Set expiration dates and download limits for time-sensitive file sharing.",
+                "Share files that expire after a set time. Perfect for sensitive documents or files you only want available for a limited period.",
         },
     ];
 
@@ -302,25 +302,81 @@ export default function HomePage() {
                             </g>
                         </svg>
                     </div>
+
+                    {/* Hero Illustration */}
+                    <div className="absolute right-10 top-1/2 transform -translate-y-1/2 hidden lg:block opacity-20">
+                        <svg
+                            width="400"
+                            height="300"
+                            viewBox="0 0 400 300"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <path
+                                d="M50 50h300v200H50z"
+                                fill="rgba(255,255,255,0.1)"
+                                stroke="rgba(255,255,255,0.2)"
+                                strokeWidth="2"
+                            />
+                            <circle
+                                cx="100"
+                                cy="100"
+                                r="20"
+                                fill="rgba(255,255,255,0.3)"
+                            />
+                            <path
+                                d="M120 100h60v20h-60z"
+                                fill="rgba(255,255,255,0.3)"
+                            />
+                            <path
+                                d="M120 130h80v20h-80z"
+                                fill="rgba(255,255,255,0.3)"
+                            />
+                            <path
+                                d="M120 160h100v20h-100z"
+                                fill="rgba(255,255,255,0.3)"
+                            />
+                            <circle
+                                cx="300"
+                                cy="100"
+                                r="15"
+                                fill="rgba(255,255,255,0.2)"
+                            />
+                            <path
+                                d="M285 100h30v30h-30z"
+                                fill="rgba(255,255,255,0.2)"
+                            />
+                            <path
+                                d="M200 200l50-50"
+                                stroke="rgba(255,255,255,0.3)"
+                                strokeWidth="2"
+                            />
+                            <path
+                                d="M250 150l50-50"
+                                stroke="rgba(255,255,255,0.3)"
+                                strokeWidth="2"
+                            />
+                        </svg>
+                    </div>
+
                     <div className="absolute inset-0 bg-black/10"></div>
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
                         <div className="mb-6">
                             <span className="inline-flex items-center px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium border border-white/20">
                                 <Star className="w-4 h-4 mr-2 text-yellow-400" />
-                                Trusted by 100,000+ professionals worldwide
+                                Used by teams at startups to Fortune 500s
                             </span>
                         </div>
                         <h1 className="text-5xl md:text-7xl font-bold mb-8 tracking-tight">
-                            Secure File Sharing
+                            Share Files Without
                             <span className="block bg-gradient-to-r from-blue-200 to-cyan-200 bg-clip-text text-transparent">
-                                Made Simple
+                                the Headaches
                             </span>
                         </h1>
                         <p className="text-xl md:text-2xl mb-10 text-blue-100 max-w-4xl mx-auto leading-relaxed">
-                            SwiftShare is the enterprise-grade file sharing
-                            platform that combines military-level security with
-                            intuitive design. Share files up to 10GB instantly
-                            with advanced collaboration tools.
+                            Stop wrestling with email attachments and clunky FTP
+                            servers. SwiftShare handles the heavy lifting so you
+                            can focus on what matters - getting your work done.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
                             <Link href="/signup">
@@ -343,8 +399,8 @@ export default function HomePage() {
                             </Link>
                         </div>
                         <div className="text-sm text-blue-200">
-                            No credit card required • 14-day free trial • Cancel
-                            anytime
+                            Free forever plan available • No setup required •
+                            Works in your browser
                         </div>
                     </div>
                 </section>
@@ -368,19 +424,81 @@ export default function HomePage() {
                 </section>
 
                 {/* Features Section */}
-                <section className="py-24 bg-gray-50">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <section className="py-24 bg-gray-50 relative overflow-hidden">
+                    {/* Background Illustration */}
+                    <div className="absolute left-10 top-20 opacity-5 hidden lg:block">
+                        <svg
+                            width="300"
+                            height="200"
+                            viewBox="0 0 300 200"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <circle cx="50" cy="50" r="30" fill="#3b82f6" />
+                            <path d="M80 50h120v20H80z" fill="#3b82f6" />
+                            <path d="M80 80h100v20H80z" fill="#3b82f6" />
+                            <path d="M80 110h140v20H80z" fill="#3b82f6" />
+                            <circle cx="250" cy="50" r="20" fill="#1d4ed8" />
+                            <path d="M230 50h40v40h-40z" fill="#1d4ed8" />
+                        </svg>
+                    </div>
+
+                    <div className="absolute right-10 bottom-20 opacity-5 hidden lg:block">
+                        <svg
+                            width="250"
+                            height="180"
+                            viewBox="0 0 250 180"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <rect
+                                x="20"
+                                y="20"
+                                width="60"
+                                height="40"
+                                fill="#3b82f6"
+                                rx="5"
+                            />
+                            <rect
+                                x="100"
+                                y="20"
+                                width="60"
+                                height="40"
+                                fill="#1d4ed8"
+                                rx="5"
+                            />
+                            <rect
+                                x="180"
+                                y="20"
+                                width="50"
+                                height="40"
+                                fill="#1e40af"
+                                rx="5"
+                            />
+                            <path
+                                d="M50 80l50-30l50 30l50-30"
+                                stroke="#3b82f6"
+                                strokeWidth="3"
+                                fill="none"
+                            />
+                            <circle cx="50" cy="120" r="15" fill="#3b82f6" />
+                            <circle cx="125" cy="120" r="15" fill="#1d4ed8" />
+                            <circle cx="200" cy="120" r="15" fill="#1e40af" />
+                        </svg>
+                    </div>
+
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                         <div className="text-center mb-20">
                             <span className="inline-block px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-4">
-                                ENTERPRISE FEATURES
+                                WHAT YOU GET
                             </span>
                             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                                Why Choose SwiftShare?
+                                Everything You Need
                             </h2>
                             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                                Built for modern teams who demand uncompromising
-                                security, lightning-fast performance, and
-                                seamless collaboration.
+                                No overcomplicated features or enterprise bloat.
+                                Just the tools you actually need to share files
+                                securely and efficiently.
                             </p>
                         </div>
 
@@ -408,15 +526,61 @@ export default function HomePage() {
                 </section>
 
                 {/* Use Cases Section */}
-                <section className="py-24 bg-white">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <section className="py-24 bg-white relative overflow-hidden">
+                    {/* Background Illustration */}
+                    <div className="absolute top-10 left-1/2 transform -translate-x-1/2 opacity-5 hidden lg:block">
+                        <svg
+                            width="400"
+                            height="150"
+                            viewBox="0 0 400 150"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <rect
+                                x="50"
+                                y="30"
+                                width="80"
+                                height="60"
+                                fill="#3b82f6"
+                                rx="8"
+                            />
+                            <rect
+                                x="150"
+                                y="30"
+                                width="80"
+                                height="60"
+                                fill="#1d4ed8"
+                                rx="8"
+                            />
+                            <rect
+                                x="250"
+                                y="30"
+                                width="80"
+                                height="60"
+                                fill="#1e40af"
+                                rx="8"
+                            />
+                            <path
+                                d="M90 100l20-20l20 20l20-20l20 20"
+                                stroke="#3b82f6"
+                                strokeWidth="2"
+                                fill="none"
+                            />
+                            <circle cx="90" cy="120" r="8" fill="#3b82f6" />
+                            <circle cx="150" cy="120" r="8" fill="#1d4ed8" />
+                            <circle cx="250" cy="120" r="8" fill="#1e40af" />
+                            <circle cx="310" cy="120" r="8" fill="#3b82f6" />
+                        </svg>
+                    </div>
+
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                         <div className="text-center mb-16">
                             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                                Perfect for Every Use Case
+                                Real People, Real Use Cases
                             </h2>
                             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                                From small teams to enterprise organizations,
-                                SwiftShare adapts to your workflow.
+                                Here's how people actually use SwiftShare in
+                                their day-to-day work.
                             </p>
                         </div>
 
@@ -439,15 +603,49 @@ export default function HomePage() {
                 </section>
 
                 {/* Testimonials Section */}
-                <section className="py-24 bg-gradient-to-br from-gray-50 to-blue-50">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <section className="py-24 bg-gradient-to-br from-gray-50 to-blue-50 relative overflow-hidden">
+                    {/* Background Illustration */}
+                    <div className="absolute bottom-10 right-10 opacity-5 hidden lg:block">
+                        <svg
+                            width="200"
+                            height="150"
+                            viewBox="0 0 200 150"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <circle cx="50" cy="50" r="25" fill="#3b82f6" />
+                            <circle cx="150" cy="50" r="25" fill="#1d4ed8" />
+                            <path
+                                d="M75 50h50"
+                                stroke="#1e40af"
+                                strokeWidth="3"
+                            />
+                            <path
+                                d="M50 75v50"
+                                stroke="#3b82f6"
+                                strokeWidth="3"
+                            />
+                            <path
+                                d="M150 75v50"
+                                stroke="#1d4ed8"
+                                strokeWidth="3"
+                            />
+                            <path
+                                d="M50 125h100"
+                                stroke="#1e40af"
+                                strokeWidth="3"
+                            />
+                        </svg>
+                    </div>
+
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                         <div className="text-center mb-16">
                             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                                Loved by Teams Worldwide
+                                What People Are Saying
                             </h2>
                             <p className="text-xl text-gray-600">
-                                See what our customers are saying about
-                                SwiftShare
+                                Real feedback from real users who switched from
+                                other file sharing tools.
                             </p>
                         </div>
 
@@ -490,15 +688,70 @@ export default function HomePage() {
                 </section>
 
                 {/* How It Works Section */}
-                <section className="py-24 bg-white">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <section className="py-24 bg-white relative overflow-hidden">
+                    {/* Background Illustration */}
+                    <div className="absolute top-20 left-10 opacity-5 hidden lg:block">
+                        <svg
+                            width="300"
+                            height="200"
+                            viewBox="0 0 300 200"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <rect
+                                x="20"
+                                y="40"
+                                width="60"
+                                height="40"
+                                fill="#3b82f6"
+                                rx="5"
+                            />
+                            <rect
+                                x="100"
+                                y="40"
+                                width="60"
+                                height="40"
+                                fill="#1d4ed8"
+                                rx="5"
+                            />
+                            <rect
+                                x="180"
+                                y="40"
+                                width="60"
+                                height="40"
+                                fill="#1e40af"
+                                rx="5"
+                            />
+                            <path
+                                d="M50 100l30-20l30 20l30-20"
+                                stroke="#3b82f6"
+                                strokeWidth="2"
+                                fill="none"
+                            />
+                            <circle cx="50" cy="140" r="10" fill="#3b82f6" />
+                            <circle cx="130" cy="140" r="10" fill="#1d4ed8" />
+                            <circle cx="210" cy="140" r="10" fill="#1e40af" />
+                            <path
+                                d="M50 160l80 0"
+                                stroke="#3b82f6"
+                                strokeWidth="2"
+                            />
+                            <path
+                                d="M130 160l80 0"
+                                stroke="#1d4ed8"
+                                strokeWidth="2"
+                            />
+                        </svg>
+                    </div>
+
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                         <div className="text-center mb-20">
                             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                                Get Started in Minutes
+                                Three Simple Steps
                             </h2>
                             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                                Simple, intuitive workflow that gets you sharing
-                                files securely in just three steps.
+                                No complicated setup, no learning curve. Just
+                                upload, share, and you're done.
                             </p>
                         </div>
 
@@ -519,13 +772,12 @@ export default function HomePage() {
                                     1
                                 </div>
                                 <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                                    Upload Instantly
+                                    Upload Your Files
                                 </h3>
                                 <p className="text-gray-600 leading-relaxed">
-                                    Drag and drop files up to 10GB or browse
-                                    from your device. Our smart compression
-                                    ensures blazing-fast uploads with resume
-                                    capability.
+                                    Drag and drop files or click to browse.
+                                    Works with any file type up to 2GB on the
+                                    free plan, 10GB on paid plans.
                                 </p>
                             </div>
 
@@ -537,12 +789,12 @@ export default function HomePage() {
                                     2
                                 </div>
                                 <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                                    Share Securely
+                                    Get Your Link
                                 </h3>
                                 <p className="text-gray-600 leading-relaxed">
-                                    Generate encrypted sharing links with custom
-                                    passwords, expiration dates, and download
-                                    limits for complete control.
+                                    Copy the sharing link and send it to anyone.
+                                    Add passwords, set expiration dates, or
+                                    limit downloads - it's up to you.
                                 </p>
                             </div>
 
@@ -554,12 +806,12 @@ export default function HomePage() {
                                     3
                                 </div>
                                 <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                                    Collaborate Effortlessly
+                                    They Download
                                 </h3>
                                 <p className="text-gray-600 leading-relaxed">
-                                    Your team can access, comment, and
-                                    collaborate on files in real-time with
-                                    version control and activity tracking.
+                                    Recipients click the link and download your
+                                    files. No accounts needed, no software to
+                                    install - just works.
                                 </p>
                             </div>
                         </div>
@@ -773,12 +1025,12 @@ export default function HomePage() {
                     <div className="absolute inset-0 bg-black/10"></div>
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
                         <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-                            Ready to Transform Your File Sharing?
+                            Ready to Stop Fighting With File Sharing?
                         </h2>
                         <p className="text-xl text-blue-100 mb-10 max-w-3xl mx-auto leading-relaxed">
-                            Join over 100,000 professionals who trust SwiftShare
-                            for secure, fast, and reliable file sharing. Start
-                            your free trial today.
+                            Stop wrestling with email attachments and clunky
+                            file sharing tools. Get started with SwiftShare and
+                            see what simple file sharing actually looks like.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
                             <Link href="/signup">
@@ -786,7 +1038,7 @@ export default function HomePage() {
                                     size="lg"
                                     className="bg-white text-blue-600 hover:bg-gray-100 px-10 py-4 text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300"
                                 >
-                                    Start Free Trial
+                                    Get Started Free
                                 </Button>
                             </Link>
                             <Link href="/contact">
@@ -802,7 +1054,7 @@ export default function HomePage() {
                         <div className="flex items-center justify-center gap-8 text-blue-200 text-sm">
                             <div className="flex items-center">
                                 <CheckCircle className="w-4 h-4 mr-2" />
-                                14-day free trial
+                                Free forever plan
                             </div>
                             <div className="flex items-center">
                                 <CheckCircle className="w-4 h-4 mr-2" />
@@ -810,7 +1062,7 @@ export default function HomePage() {
                             </div>
                             <div className="flex items-center">
                                 <CheckCircle className="w-4 h-4 mr-2" />
-                                Cancel anytime
+                                Works in any browser
                             </div>
                         </div>
                     </div>
