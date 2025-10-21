@@ -8,6 +8,29 @@ A modern, secure file sharing platform built for teams and individuals who need 
 
 Unlike other file sharing platforms that overwhelm you with features you'll never use, Swift Share focuses on what actually matters: **secure, fast, and reliable file sharing** that just works. No complicated setup, no enterprise jargon - just clean, intuitive file management.
 
+## 📸 Screenshots
+
+See Swift Share in action with these screenshots showcasing the clean, intuitive interface:
+
+<div align="center">
+
+### 🏠 Homepage
+<img src="screenshots/home.png" alt="Swift Share Homepage" width="800" height="450" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+
+*Clean, modern homepage with clear value proposition and feature highlights*
+
+### 📊 Dashboard Overview
+<img src="screenshots/dashboard.png" alt="Swift Share Dashboard" width="800" height="450" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+
+*Intuitive dashboard with file management, sharing controls, and activity overview*
+
+### 📁 File Management
+<img src="screenshots/dashboard list files.png" alt="Swift Share File List" width="800" height="450" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+
+*Organized file browser with drag-and-drop upload, folder management, and sharing options*
+
+</div>
+
 ## 🎯 Core Features
 
 ### 🔒 **Security First**
